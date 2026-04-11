@@ -303,6 +303,46 @@ function create( event, rc, prc ) {
 }
 ```
 
+## Executing Events with runEvent()
+
+```boxlang
+function dashboard( event, rc, prc ) {
+
+    prc.stats = runEvent(
+        event          = "reports.stats",
+        private        = true,
+        prePostExempt  = true,
+        eventArguments = {
+            range    : rc.range ?: "30d",
+            include  : [ "sales", "users", "retention" ]
+        }
+    )
+
+    prc.recentOrders = runEvent(
+        event          = "widgets.recentOrders",
+        cache          = true,
+        cacheTimeout   = 5,
+        cacheSuffix    = "dashboard-#prc.currentUser.getId()#",
+        eventArguments = { limit : 10 }
+    )
+
+    event.setView( "dashboard/index" )
+}
+```
+
+## Viewlets and Reusable Events
+
+```boxlang
+function sidebar( event, rc, prc ) {
+    return runEvent(
+        event          = "widgets.categoryMenu",
+        private        = true,
+        prePostExempt  = true,
+        eventArguments = { selectedSlug : rc.category ?: "" }
+    )
+}
+```
+
 ## Event Model Best Practices
 
 - Use `prc` for data passed to views (not `rc`)
@@ -311,3 +351,5 @@ function create( event, rc, prc ) {
 - Use `relocate()` for POST-REDIRECT-GET pattern
 - Call `event.noRender()` to suppress any rendering (for background tasks)
 - Use `event.isAjax()` to detect and respond to AJAX requests appropriately
+- Use `runEvent()` for reusable widgets/viewlets and internal event orchestration instead of duplicating handler logic
+- Pass explicit `eventArguments` structs to internal events rather than mutating `rc` for side effects

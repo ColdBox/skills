@@ -382,6 +382,50 @@ wirebox = {
 // No binder needed for most use cases
 ```
 
+## Child Injectors and Explicit Child DSL
+
+```boxlang
+// Ask a specific child injector for an instance
+var tenantService = wirebox.getInstance(
+    name     = "TenantService",
+    injector = "tenantA"
+)
+
+// Inject directly from a named child injector
+class TenantGateway {
+
+    @inject( "wirebox:child:tenantA:TenantService" )
+    property name="tenantService";
+}
+```
+
+## Lazy Properties, Delegators, and the Object Populator
+
+```boxlang
+class ReportService {
+
+    property name="formatter" lazy;
+
+    function buildFormatter() {
+        return wirebox.getInstance( "ReportFormatter" )
+    }
+
+    function hydrateUser( payload ) {
+        return wirebox.getObjectPopulator().populateFromStruct(
+            target         = wirebox.getInstance( "UserDTO" ),
+            memento        = payload,
+            composeRelationships = true
+        )
+    }
+}
+```
+
+Use these advanced WireBox features when the default injection patterns are not enough:
+- **Child injectors** for multi-tenant, modular, or hierarchical DI lookups
+- **Lazy properties** when an expensive collaborator should only be created on first access
+- **Delegators** when you want composition with automatic method forwarding instead of inheritance
+- **Object populator** when hydrating DTOs, entities, or forms from structs, JSON, XML, or query data
+
 ## WireBox Best Practices
 
 - Use `@inject` property annotations as the primary injection style
@@ -391,3 +435,5 @@ wirebox = {
 - Use the WireBox binder only for: interface-to-implementation mapping, factory methods, or complex initialization
 - Avoid `getInstance()` in services — inject dependencies instead
 - Use `provider:` DSL for expensive, potentially-unused dependencies
+- Reach for child injectors only when you need explicit hierarchy boundaries; keep the default injector as the norm
+- Use the object populator for controlled hydration instead of ad hoc property-copy loops

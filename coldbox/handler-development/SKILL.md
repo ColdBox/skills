@@ -463,6 +463,91 @@ component extends="coldbox.system.EventHandler" {
 }
 ```
 
+## HTTP Method Security
+
+```boxlang
+class Orders extends coldbox.system.EventHandler {
+
+    this.allowedMethods = {
+        save   : "POST",
+        update : "PUT,PATCH",
+        delete : "DELETE"
+    }
+
+    function save( event, rc, prc ) {
+        var order = orderService.create( rc )
+        flash.put( "success", "Order created" )
+        relocate( "orders.show/#order.getId()#" )
+    }
+
+    function onInvalidHTTPMethod( event, rc, prc, faultAction, eventArguments ) {
+        event.renderData(
+            type       = "json",
+            data       = { error : "Method not allowed", action : faultAction },
+            statusCode = 405
+        )
+    }
+}
+```
+
+**CFML (`.cfc`):**
+
+```cfml
+component extends="coldbox.system.EventHandler" {
+
+    this.allowedMethods = {
+        save   : "POST",
+        update : "PUT,PATCH",
+        delete : "DELETE"
+    }
+
+    function save( event, rc, prc ) {
+        var order = orderService.create( rc )
+        flash.put( "success", "Order created" )
+        relocate( "orders.show/#order.getId()#" )
+    }
+
+    function onInvalidHTTPMethod( event, rc, prc, faultAction, eventArguments ) {
+        event.renderData(
+            type       = "json",
+            data       = { error : "Method not allowed", action : faultAction },
+            statusCode = 405
+        )
+    }
+}
+```
+
+## Model Data Binding with populateModel()
+
+```boxlang
+class Users extends coldbox.system.EventHandler {
+
+    @inject
+    property name="userService";
+
+    function save( event, rc, prc ) {
+        var user = populateModel(
+            model                = userService.new(),
+            include              = "firstName,lastName,email,password",
+            exclude              = "role,isAdmin",
+            composeRelationships = true,
+            ignoreEmpty          = true
+        )
+
+        var result = userService.save( user )
+        if( result.hasErrors() ){
+            flash.put( "errors", result.getErrors() )
+            flash.put( "data", rc )
+            relocate( "users.create" )
+            return
+        }
+
+        flash.put( "success", "User saved" )
+        relocate( "users.index" )
+    }
+}
+```
+
 ## Handler Best Practices
 
 - Keep handlers thin — delegate business logic to services/models
@@ -471,4 +556,6 @@ component extends="coldbox.system.EventHandler" {
 - Use `relocate()` after POST actions (PRG pattern)
 - Inject dependencies via `@inject` annotations (WireBox)
 - Secure handlers with `this.preHandler` or CBSecurity annotations
+- Use `this.allowedMethods` and `onInvalidHTTPMethod()` to enforce HTTP semantics centrally
+- Prefer `populateModel()` over hand-copying request values into entities/forms
 - Name handlers to match route resources (e.g., `Users.cfc` → `users.*`)

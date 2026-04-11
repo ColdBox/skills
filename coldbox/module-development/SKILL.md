@@ -364,6 +364,26 @@ component {
 }
 ```
 
+## Module Inception and Dependencies
+
+Use module inception when one ColdBox module depends on another ColdBox module and should install or bootstrap it automatically.
+
+```json
+{
+    "name" : "content-module",
+    "type" : "modules",
+    "dependencies" : {
+        "cbvalidation" : "^4.0.0",
+        "cbauth"       : "^2.0.0"
+    }
+}
+```
+
+Keep inception boundaries clean:
+- Declare module dependencies in `box.json`, not in ad hoc runtime checks
+- Let each module own its config, routes, interceptors, and binder registrations
+- Avoid hard-coding host-app paths when a dependent module should remain portable
+
 ## Overriding Module Settings from Host App
 
 ```boxlang
@@ -416,6 +436,25 @@ component extends="coldbox.system.Interceptor" {
     }
 }
 ```
+
+## Module Helpers and CF Mappings
+
+```boxlang
+// modules_app/myModule/ModuleConfig.cfc
+class ModuleConfig {
+
+    function configure() {
+        settings = {
+            cfmapping : "/mymodule"
+        }
+    }
+}
+```
+
+Use module helpers and CF mappings intentionally:
+- Add module-level or handler-level helper templates for reusable view logic that belongs to the module
+- Expose a dedicated CF mapping when external code needs stable access to module assets or classes
+- Keep helpers presentation-focused; do not move service/business logic into helper files
 
 ## Module WireBox Binder
 

@@ -392,6 +392,41 @@ function getCacheReport() {
 }
 ```
 
+## Cache Event Listeners
+
+```boxlang
+// interceptors/CacheAuditInterceptor.bx
+class CacheAuditInterceptor extends coldbox.system.Interceptor {
+
+    function configure() {}
+
+    function afterCacheElementInsert( event, interceptData ) {
+        log.debug( "Cache insert", {
+            cache : interceptData.cache.getName(),
+            key   : interceptData.key
+        } )
+    }
+
+    function afterCacheElementRemoved( event, interceptData ) {
+        log.info( "Cache eviction", {
+            cache : interceptData.cache.getName(),
+            key   : interceptData.key
+        } )
+    }
+
+    function beforeCacheFactoryShutdown( event, interceptData ) {
+        log.warn( "CacheBox factory shutting down", {
+            caches : interceptData.cacheFactory.getCacheNames()
+        } )
+    }
+}
+```
+
+Use CacheBox listeners when you need observability or lifecycle hooks around cache behavior:
+- Audit insert/remove events
+- Warm or invalidate related data when cache events fire
+- Distinguish ColdBox interceptor-based listeners from standalone CacheBox listeners
+
 ## CacheBox Best Practices
 
 - Use named caches for different data domains (products, sessions, templates)
@@ -402,3 +437,4 @@ function getCacheReport() {
 - Monitor cache hit rates — low hit rates indicate key strategy problems
 - Warm critical caches on application startup (listener on `applicationStart`)
 - Never cache user-specific data in shared caches — include user ID in key
+- Prefer event listeners for cross-cutting cache monitoring instead of sprinkling logging into every cache call site

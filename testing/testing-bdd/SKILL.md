@@ -25,7 +25,7 @@ Examples use **BoxLang (`.bx`)** syntax by default. Adapt for your target langua
 ## Basic BDD Test Structure
 
 ```boxlang
-component extends="testbox.system.BaseSpec" {
+class extends="testbox.system.BaseSpec" {
 
     function run() {
         describe( "UserService", () => {
@@ -67,7 +67,7 @@ component extends="testbox.system.BaseSpec" {
 ## Nested Test Suites
 
 ```boxlang
-component extends="testbox.system.BaseSpec" {
+class extends="testbox.system.BaseSpec" {
 
     function run() {
         describe( "UserService", () => {
@@ -187,10 +187,40 @@ xdescribe( "skipped suite", () => {
 xit( "skipped test", () => { /* ... */ } )
 ```
 
+## Asynchronous Suites
+
+```boxlang
+class extends="testbox.system.BaseSpec" {
+
+    function run() {
+        describe( "parallel cache reads", { asyncAll: true }, () => {
+            beforeEach( () => {
+                variables.cache = getInstance( "cachebox:default" )
+            } )
+
+            it( "returns product 1", () => {
+                var product = productService.getById( 1 )
+                expect( product.getId() ).toBe( 1 )
+            } )
+
+            it( "returns product 2", () => {
+                var product = productService.getById( 2 )
+                expect( product.getId() ).toBe( 2 )
+            } )
+        } )
+    }
+}
+```
+
+When using `asyncAll: true`:
+- Keep test data isolated per spec with `var` or `variables` scoping discipline
+- Do not mutate shared state without locks or disposable fixtures
+- Reserve async suites for IO-bound or concurrency-sensitive behavior, not every test
+
 ## WireBox Integration in Tests
 
 ```boxlang
-component extends="testbox.system.BaseSpec" {
+class extends="testbox.system.BaseSpec" {
 
     property name="wirebox" inject="wirebox"
 

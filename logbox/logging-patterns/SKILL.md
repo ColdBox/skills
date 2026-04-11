@@ -484,6 +484,57 @@ function production() {
 }
 ```
 
+## Custom Appenders and Layouts
+
+```boxlang
+// models/logging/SlackAppender.bx
+class SlackAppender extends coldbox.system.logging.AbstractAppender {
+
+    function init( name, properties = {}, layout = "" ) {
+        super.init( argumentCollection = arguments )
+        return this
+    }
+
+    function onRegistration() {
+        variables.webhookUrl = getProperty( "webhookUrl", "" )
+    }
+
+    function logMessage( logEvent ) {
+        if( !len( variables.webhookUrl ) ){
+            return
+        }
+
+        http url=variables.webhookUrl method="POST" {
+            httpparam type="body" value=serializeJSON( {
+                text : "[#logEvent.getSeverity()#] #logEvent.getMessage()#"
+            } )
+        }
+    }
+
+    function onUnRegistration() {}
+}
+```
+
+```boxlang
+// models/logging/JsonLayout.bx
+class JsonLayout extends coldbox.system.logging.AbstractLayout {
+
+    function format( logEvent ) {
+        return serializeJSON( {
+            severity  : logEvent.getSeverity(),
+            category  : logEvent.getCategory(),
+            message   : logEvent.getMessage(),
+            extraInfo : logEvent.getExtraInfo()
+        } )
+    }
+}
+```
+
+Use custom LogBox extensions when the built-in appenders or layouts do not match your delivery target:
+- Extend `AbstractAppender` for new sinks such as Slack, webhooks, queues, or observability platforms
+- Extend `AbstractLayout` for JSON or vendor-specific log formats
+- Keep appender setup in configuration and keep transport logic isolated inside the appender class
+
 ## LogBox Best Practices
 
 - Use `@inject( "logBox:logger:{this}" )` to get a logger named after the current class
@@ -494,3 +545,4 @@ function production() {
 - In development: DEBUG+ to console for live feedback
 - Never log passwords, tokens, or PII — redact before logging
 - Use rolling file appenders in production with size/archive limits to manage disk
+- Prefer custom appenders and layouts over duplicating transport/formatting logic throughout the app
