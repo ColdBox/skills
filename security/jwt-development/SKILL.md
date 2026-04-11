@@ -142,6 +142,70 @@ class singleton {
     }
 }
 ```
+**CFML (`.cfc`):**
+
+```cfml
+/**
+ * models/JWTService.cfc
+ */
+component singleton {
+
+    property name="jwtService"  inject="JWTService@cbsecurity"
+    property name="userService" inject="UserService"
+    property name="bcrypt"      inject="@BCrypt"
+
+    function generateToken( required user ) {
+        return jwtService.encode( {
+            sub:         user.id,
+            email:       user.email,
+            name:        user.name,
+            roles:       user.roles,
+            permissions: user.permissions,
+            iat:         now(),
+            exp:         dateAdd( "n", 60, now() )
+        } )
+    }
+
+    function generateRefreshToken( required user ) {
+        return jwtService.encode( {
+            sub:  user.id,
+            type: "refresh",
+            iat:  now(),
+            exp:  dateAdd( "d", 7, now() )
+        } )
+    }
+
+    function authenticate( required username, required password ) {
+        var user = userService.findByUsername( arguments.username )
+
+        if ( !bcrypt.checkPassword( arguments.password, user.password ) ) {
+            throw( type: "InvalidCredentials", message: "Invalid username or password" )
+        }
+
+        return {
+            accessToken:  generateToken( user ),
+            refreshToken: generateRefreshToken( user ),
+            expiresIn:    3600,
+            tokenType:    "Bearer"
+        }
+    }
+
+    function refreshAccessToken( required refreshToken ) {
+        var claims = jwtService.decode( arguments.refreshToken )
+
+        if ( !claims.keyExists( "type" ) || claims.type != "refresh" ) {
+            throw( type: "InvalidToken", message: "Not a refresh token" )
+        }
+
+        var user = userService.findById( claims.sub )
+        return {
+            accessToken: generateToken( user ),
+            expiresIn:   3600,
+            tokenType:   "Bearer"
+        }
+    }
+}
+```
 
 ## Auth Handler
 
@@ -150,6 +214,52 @@ class singleton {
  * handlers/api/Auth.cfc
  */
 class extends="coldbox.system.RestHandler" {
+
+    property name="jwtService" inject="JWTService@models"
+
+    // POST /api/auth/login
+    function login( event, rc, prc ) {
+        event.paramValue( "username", "" )
+        event.paramValue( "password", "" )
+
+        try {
+            var tokens = jwtService.authenticate( rc.username, rc.password )
+            event.getResponse()
+                .setData( tokens )
+                .setStatusCode( 200 )
+        } catch ( InvalidCredentials e ) {
+            event.getResponse()
+                .setError( true )
+                .addMessage( e.message )
+                .setStatusCode( 401 )
+        }
+    }
+
+    // POST /api/auth/refresh
+    function refresh( event, rc, prc ) {
+        event.paramValue( "refreshToken", "" )
+
+        try {
+            var result = jwtService.refreshAccessToken( rc.refreshToken )
+            event.getResponse()
+                .setData( result )
+                .setStatusCode( 200 )
+        } catch ( InvalidToken e ) {
+            event.getResponse()
+                .setError( true )
+                .addMessage( "Invalid or expired refresh token" )
+                .setStatusCode( 401 )
+        }
+    }
+}
+```
+**CFML (`.cfc`):**
+
+```cfml
+/**
+ * handlers/api/Auth.cfc
+ */
+component extends="coldbox.system.RestHandler" {
 
     property name="jwtService" inject="JWTService@models"
 
@@ -198,6 +308,43 @@ class extends="coldbox.system.RestHandler" {
  * @secured — requires valid JWT
  */
 class extends="coldbox.system.RestHandler" {
+
+    property name="userService" inject="UserService"
+    property name="cbsecurity"  inject="@cbsecurity"
+
+    // GET /api/v1/users
+    function index( event, rc, prc ) {
+        event.paramValue( "page",    1 )
+        event.paramValue( "perPage", 25 )
+
+        prc.users = userService.list(
+            page:    rc.page,
+            perPage: rc.perPage
+        )
+
+        event.getResponse().setData( prc.users )
+    }
+
+    /**
+     * Admin only
+     * @secured admin
+     */
+    function destroy( event, rc, prc ) {
+        userService.delete( rc.id )
+        event.getResponse()
+            .setData( {} )
+            .setStatusCode( 204 )
+    }
+}
+```
+**CFML (`.cfc`):**
+
+```cfml
+/**
+ * handlers/api/v1/Users.cfc
+ * @secured — requires valid JWT
+ */
+component extends="coldbox.system.RestHandler" {
 
     property name="userService" inject="UserService"
     property name="cbsecurity"  inject="@cbsecurity"

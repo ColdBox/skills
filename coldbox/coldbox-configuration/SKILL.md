@@ -33,7 +33,7 @@ ColdBox.cfc contains sections for:
 - **`cachebox`** — CacheBox cache configuration
 - **`wirebox`** — WireBox DI configuration
 
-## Full ColdBox.cfc Template (BoxLang)
+## Full ColdBox.cfc Template
 
 ```boxlang
 class ColdBox extends coldbox.system.Coldbox {

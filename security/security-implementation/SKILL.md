@@ -126,6 +126,57 @@ class singleton {
     }
 }
 ```
+**CFML (`.cfc`):**
+
+```cfml
+/**
+ * models/SecurityService.cfc
+ */
+component singleton {
+
+    property name="userService"     inject="UserService"
+    property name="bcrypt"          inject="@BCrypt"
+    property name="sessionStorage"  inject="sessionStorage@cbstorages"
+
+    function authenticate( required username, required password ) {
+        try {
+            var user = userService.findByUsername( arguments.username )
+
+            if ( !bcrypt.checkPassword( arguments.password, user.password ) ) {
+                throw( type: "InvalidCredentials" )
+            }
+
+            sessionStorage.set( "currentUser", user )
+            return true
+
+        } catch ( any e ) {
+            return false
+        }
+    }
+
+    function getUser() {
+        return sessionStorage.get( "currentUser", {} )
+    }
+
+    function isLoggedIn() {
+        return sessionStorage.exists( "currentUser" )
+    }
+
+    function logout() {
+        sessionStorage.delete( "currentUser" )
+    }
+
+    function hasRole( required role ) {
+        var user = getUser()
+        return structIsEmpty( user ) ? false : listContains( user.roles, arguments.role )
+    }
+
+    function can( required permission ) {
+        var user = getUser()
+        return structIsEmpty( user ) ? false : listContains( user.permissions, arguments.permission )
+    }
+}
+```
 
 ## Security Interceptor
 
@@ -135,6 +186,40 @@ class singleton {
  * Runs on every request to check auth status
  */
 class extends="coldbox.system.Interceptor" {
+
+    property name="cbsecurity" inject="@cbsecurity"
+
+    function preProcess( event, interceptData ) {
+        // Skip public routes
+        if ( isPublicRoute( event.getCurrentEvent() ) ) {
+            return
+        }
+
+        // Check authentication
+        if ( !cbsecurity.isLoggedIn() ) {
+            flash.put( "redirectTo", cgi.script_name & "?" & cgi.query_string )
+            relocate( "auth.login" )
+        }
+    }
+
+    private function isPublicRoute( required eventName ) {
+        var publicRoutes = [
+            "auth.login", "auth.doLogin",
+            "auth.register", "auth.doRegister",
+            "main.index"
+        ]
+        return publicRoutes.contains( arguments.eventName )
+    }
+}
+```
+**CFML (`.cfc`):**
+
+```cfml
+/**
+ * interceptors/SecurityInterceptor.cfc
+ * Runs on every request to check auth status
+ */
+component extends="coldbox.system.Interceptor" {
 
     property name="cbsecurity" inject="@cbsecurity"
 
@@ -199,6 +284,43 @@ class extends="coldbox.system.EventHandler" {
     }
 }
 ```
+**CFML (`.cfc`):**
+
+```cfml
+/**
+ * handlers/Auth.cfc
+ */
+component extends="coldbox.system.EventHandler" {
+
+    property name="security" inject="SecurityService@models"
+
+    function login( event, rc, prc ) {
+        if ( security.isLoggedIn() ) {
+            relocate( uri = "main.dashboard" )
+        }
+        event.setView( "auth/login" )
+    }
+
+    function doLogin( event, rc, prc ) {
+        event.paramValue( "email",    "" )
+        event.paramValue( "password", "" )
+
+        if ( security.authenticate( rc.email, rc.password ) ) {
+            // Redirect to originally requested URL if available
+            var destination = flash.get( "redirectTo", "main.dashboard" )
+            relocate( uri = destination )
+        } else {
+            flash.put( "error", "Invalid credentials" )
+            relocate( "auth.login" )
+        }
+    }
+
+    function doLogout( event, rc, prc ) {
+        security.logout()
+        relocate( "auth.login" )
+    }
+}
+```
 
 ## Security Events (Interceptors)
 
@@ -208,6 +330,34 @@ class extends="coldbox.system.EventHandler" {
  * Log security events for audit trail
  */
 class extends="coldbox.system.Interceptor" {
+
+    property name="logger" inject="logbox:logger:{this}"
+
+    function CBSecurity_onInvalidAuthentication( event, interceptData ) {
+        logger.warn( "Authentication failure: event=#interceptData.event#, ip=#cgi.remote_addr#" )
+    }
+
+    function CBSecurity_onInvalidAuthorization( event, interceptData ) {
+        logger.warn( "Authorization failure: event=#interceptData.event#, user=#interceptData.userId#" )
+    }
+
+    function CBSecurity_onAuthentication( event, interceptData ) {
+        logger.info( "User logged in: #interceptData.userId#" )
+    }
+
+    function CBSecurity_onLogout( event, interceptData ) {
+        logger.info( "User logged out: #interceptData.userId#" )
+    }
+}
+```
+**CFML (`.cfc`):**
+
+```cfml
+/**
+ * interceptors/SecurityEvents.cfc
+ * Log security events for audit trail
+ */
+component extends="coldbox.system.Interceptor" {
 
     property name="logger" inject="logbox:logger:{this}"
 

@@ -59,11 +59,65 @@ class extends="quick.models.BaseEntity" {
     }
 }
 ```
+**CFML (`.cfc`):**
+
+```cfml
+/**
+ * models/User.cfc
+ */
+component extends="quick.models.BaseEntity" {
+
+    variables.table     = "users"     // optional — defaults to pluralized class name
+    variables.key       = "id"        // optional — defaults to "id"
+
+    variables.fillable  = [ "firstName", "lastName", "email", "password" ]
+    variables.hidden    = [ "password" ]  // excluded from serialization
+
+    variables.casts     = {
+        isActive:  "boolean",
+        createdAt: "datetime",
+        settings:  "json"
+    }
+}
+```
 
 ## Relationships
 
 ```boxlang
 class extends="quick.models.BaseEntity" {
+
+    variables.fillable = [ "name", "email" ]
+
+    // One-to-Many
+    function posts() {
+        return hasMany( "Post" )
+    }
+
+    // Many-to-One
+    function role() {
+        return belongsTo( "Role" )
+    }
+
+    // One-to-One
+    function profile() {
+        return hasOne( "Profile" )
+    }
+
+    // Many-to-Many (pivot table)
+    function teams() {
+        return belongsToMany( "Team" )
+    }
+
+    // Has-many-through
+    function countryUsers() {
+        return hasManyThrough( [ "Country", "State" ] )
+    }
+}
+```
+**CFML (`.cfc`):**
+
+```cfml
+component extends="quick.models.BaseEntity" {
 
     variables.fillable = [ "name", "email" ]
 
@@ -272,11 +326,65 @@ getInstance( "User" ).role( "manager" ).get()
 // Combine scopes
 getInstance( "User" ).active().role( "admin" ).orderBy( "name" ).get()
 ```
+**CFML (`.cfc`):**
+
+```cfml
+/**
+ * Define reusable query scopes on an entity
+ */
+component extends="quick.models.BaseEntity" {
+
+    // Scope: scopeActive( query )
+    function scopeActive( q ) {
+        return q.where( "isActive", true ).whereNull( "deletedAt" )
+    }
+
+    // Scope: scopeAdmins( query )
+    function scopeAdmins( q ) {
+        return q.where( "role", "admin" )
+    }
+
+    // Scope with parameter: scopeRole( query, role )
+    function scopeRole( q, required role ) {
+        return q.where( "role", arguments.role )
+    }
+}
+
+// Usage
+getInstance( "User" ).active().get()
+getInstance( "User" ).admins().get()
+getInstance( "User" ).role( "manager" ).get()
+
+// Combine scopes
+getInstance( "User" ).active().role( "admin" ).orderBy( "name" ).get()
+```
 
 ## Accessors & Mutators
 
 ```boxlang
 class extends="quick.models.BaseEntity" {
+
+    // Accessor — transform when reading
+    function getFullNameAttribute() {
+        return variables.firstName & " " & variables.lastName
+    }
+
+    // Mutator — transform before storage
+    function setPasswordAttribute( required value ) {
+        variables.password = bcrypt.hashPassword( arguments.value )
+    }
+}
+
+// Usage
+var user = getInstance( "User" ).findOrFail( 1 )
+writeOutput( user.getFullName() )  // accessor
+user.setPassword( "secret123" )    // mutator — auto-hashed
+user.save()
+```
+**CFML (`.cfc`):**
+
+```cfml
+component extends="quick.models.BaseEntity" {
 
     // Accessor — transform when reading
     function getFullNameAttribute() {

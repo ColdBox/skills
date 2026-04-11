@@ -64,6 +64,30 @@ class {
     }
 }
 ```
+**CFML (`.cfc`):**
+
+```cfml
+// config/WireBox.cfc
+component {
+
+    function configure() {
+
+        // Single interceptor
+        map( "UserService" )
+            .to( "models.UserService" )
+            .asSingleton()
+            .addInterceptor( "LoggingInterceptor" )
+
+        // Multiple interceptors — executed in declaration order
+        map( "OrderService" )
+            .to( "models.OrderService" )
+            .asSingleton()
+            .addInterceptor( "SecurityInterceptor" )
+            .addInterceptor( "LoggingInterceptor" )
+            .addInterceptor( "PerformanceInterceptor" )
+    }
+}
+```
 
 ## Invocation Object API
 
@@ -89,6 +113,31 @@ function around( invocation ) {
  * interceptors/LoggingInterceptor.cfc
  */
 class {
+
+    property name="log" inject="logbox:logger:{this}"
+
+    function before( invocation ) {
+        log.debug( "Calling #invocation.getMethod()# with #serializeJSON( invocation.getArgs() )#" )
+    }
+
+    function after( invocation, result ) {
+        log.debug( "#invocation.getMethod()# completed" )
+        return result
+    }
+
+    function onException( invocation, exception ) {
+        log.error( "#invocation.getMethod()# failed: #exception.message#" )
+        rethrow
+    }
+}
+```
+**CFML (`.cfc`):**
+
+```cfml
+/**
+ * interceptors/LoggingInterceptor.cfc
+ */
+component {
 
     property name="log" inject="logbox:logger:{this}"
 
@@ -140,6 +189,38 @@ class {
     }
 }
 ```
+**CFML (`.cfc`):**
+
+```cfml
+/**
+ * interceptors/PerformanceInterceptor.cfc
+ */
+component {
+
+    property name="log" inject="logbox:logger:{this}"
+
+    function around( invocation ) {
+        var start      = getTickCount()
+        var methodName = invocation.getMethod()
+
+        try {
+            var result   = invocation.proceed()
+            var duration = getTickCount() - start
+
+            if ( duration > 1000 ) {
+                log.warn( "SLOW method: #methodName# (#duration#ms)" )
+            } else {
+                log.debug( "Method: #methodName# (#duration#ms)" )
+            }
+
+            return result
+        } catch ( any e ) {
+            log.error( "#methodName# failed after #getTickCount() - start#ms" )
+            rethrow
+        }
+    }
+}
+```
 
 ## Audit Logging
 
@@ -148,6 +229,37 @@ class {
  * interceptors/AuditInterceptor.cfc
  */
 class {
+
+    property name="auditService" inject="AuditService"
+    property name="authService"  inject="cbauth@cbauth"
+
+    function after( invocation, result ) {
+        var methodName = invocation.getMethod()
+
+        // Only audit mutating methods
+        if ( methodName.findNoCase( "create" ) ||
+             methodName.findNoCase( "update" ) ||
+             methodName.findNoCase( "delete" ) ) {
+
+            auditService.log(
+                action:    methodName,
+                user:      authService.isLoggedIn() ? authService.getUser().getID() : "anonymous",
+                data:      invocation.getArgs(),
+                timestamp: now()
+            )
+        }
+
+        return result
+    }
+}
+```
+**CFML (`.cfc`):**
+
+```cfml
+/**
+ * interceptors/AuditInterceptor.cfc
+ */
+component {
 
     property name="auditService" inject="AuditService"
     property name="authService"  inject="cbauth@cbauth"
@@ -217,6 +329,50 @@ class singleton {
     function approveOrder( orderID ) { ... }
 }
 ```
+**CFML (`.cfc`):**
+
+```cfml
+/**
+ * interceptors/SecurityInterceptor.cfc
+ * Reads @secured annotation from method metadata.
+ */
+component {
+
+    property name="cbsecurity" inject="@CBSecurity"
+    property name="log"        inject="logbox:logger:{this}"
+
+    function before( invocation ) {
+        var method   = invocation.getMethod()
+        var target   = invocation.getTarget()
+        var metadata = getMetadata( target[ method ] )
+
+        if ( structKeyExists( metadata, "secured" ) ) {
+            var requiredRole = metadata.secured
+
+            if ( !cbsecurity.has( requiredRole ) ) {
+                log.warn( "Unauthorized access attempt to #method#" )
+                throw( type: "SecurityException", message: "Access denied to #method#" )
+            }
+        }
+    }
+}
+
+/**
+ * Usage — annotate service methods
+ */
+component singleton {
+
+    /**
+     * @secured admin
+     */
+    function deleteUser( userID ) { ... }
+
+    /**
+     * @secured manager,admin
+     */
+    function approveOrder( orderID ) { ... }
+}
+```
 
 ## Transaction Management
 
@@ -254,6 +410,51 @@ class {
 
 // Usage
 class singleton {
+    /**
+     * @transactional true
+     */
+    function transferFunds( fromID, toID, amount ) {
+        debit( fromID, amount )
+        credit( toID, amount )
+    }
+}
+```
+**CFML (`.cfc`):**
+
+```cfml
+/**
+ * interceptors/TransactionInterceptor.cfc
+ * Wraps @transactional methods in a DB transaction.
+ */
+component {
+
+    property name="log" inject="logbox:logger:{this}"
+
+    function around( invocation ) {
+        var method   = invocation.getMethod()
+        var target   = invocation.getTarget()
+        var metadata = getMetadata( target[ method ] )
+
+        if ( !structKeyExists( metadata, "transactional" ) ) {
+            return invocation.proceed()
+        }
+
+        transaction {
+            try {
+                var result = invocation.proceed()
+                transaction action="commit"
+                return result
+            } catch ( any e ) {
+                transaction action="rollback"
+                log.error( "Transaction rolled back for #method#: #e.message#" )
+                rethrow
+            }
+        }
+    }
+}
+
+// Usage
+component singleton {
     /**
      * @transactional true
      */
@@ -311,6 +512,53 @@ class singleton {
     }
 }
 ```
+**CFML (`.cfc`):**
+
+```cfml
+/**
+ * interceptors/CacheInterceptor.cfc
+ * Caches results of methods annotated with @cacheable {minutes}.
+ */
+component {
+
+    property name="cache" inject="cachebox:default"
+    property name="log"   inject="logbox:logger:{this}"
+
+    function around( invocation ) {
+        var method   = invocation.getMethod()
+        var target   = invocation.getTarget()
+        var metadata = getMetadata( target[ method ] )
+
+        if ( !structKeyExists( metadata, "cacheable" ) ) {
+            return invocation.proceed()
+        }
+
+        var cacheKey    = method & "_" & hash( serializeJSON( invocation.getArgs() ) )
+        var cachedResult = cache.get( cacheKey )
+
+        if ( !isNull( cachedResult ) ) {
+            log.debug( "Cache HIT for #method#" )
+            return cachedResult
+        }
+
+        log.debug( "Cache MISS for #method#" )
+        var result = invocation.proceed()
+        cache.set( cacheKey, result, val( metadata.cacheable ) )
+
+        return result
+    }
+}
+
+// Usage
+component singleton {
+    /**
+     * @cacheable 60
+     */
+    function getAppConfig() {
+        // expensive DB fetch — cached for 60 minutes
+    }
+}
+```
 
 ## Retry Logic
 
@@ -353,6 +601,53 @@ class {
 
 // Usage
 class singleton {
+    /**
+     * @retry 3
+     */
+    function callExternalAPI() { ... }
+}
+```
+**CFML (`.cfc`):**
+
+```cfml
+/**
+ * interceptors/RetryInterceptor.cfc
+ * Retries @retry {n} times on exception with exponential back-off.
+ */
+component {
+
+    property name="log" inject="logbox:logger:{this}"
+
+    function around( invocation ) {
+        var method   = invocation.getMethod()
+        var target   = invocation.getTarget()
+        var metadata = getMetadata( target[ method ] )
+
+        if ( !structKeyExists( metadata, "retry" ) ) {
+            return invocation.proceed()
+        }
+
+        var maxRetries = val( metadata.retry )
+        var attempt    = 0
+
+        while ( attempt < maxRetries ) {
+            try {
+                return invocation.proceed()
+            } catch ( any e ) {
+                attempt++
+                if ( attempt >= maxRetries ) {
+                    log.error( "#method# failed after #attempt# attempt(s)" )
+                    rethrow
+                }
+                log.warn( "#method# attempt #attempt#/#maxRetries# failed — retrying..." )
+                sleep( 1000 * attempt )  // exponential back-off
+            }
+        }
+    }
+}
+
+// Usage
+component singleton {
     /**
      * @retry 3
      */

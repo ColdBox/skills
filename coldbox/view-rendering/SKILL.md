@@ -139,6 +139,22 @@ class EmailService {
     }
 }
 ```
+**CFML (`.cfc`):**
+
+```cfml
+// Inject renderer into service
+component EmailService {
+
+        property name="renderer" inject="renderer" inject="coldbox:renderer";
+
+    function getWelcomeEmailHTML( user ) {
+        return renderer.renderView(
+            view = "emails/welcome",
+            args = { user: user }
+        )
+    }
+}
+```
 
 ## Dynamic View Selection
 

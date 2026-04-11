@@ -243,6 +243,18 @@ class ModuleConfig {
     }
 }
 ```
+**CFML (`.cfc`):**
+
+```cfml
+// ModuleConfig.cfc — set module default layout
+component ModuleConfig {
+    function configure() {
+        layoutSettings = {
+            defaultLayout : "Admin"
+        }
+    }
+}
+```
 
 ## Layout Best Practices
 

@@ -46,7 +46,7 @@ modules_app/
     ModuleConfig.cfc
 ```
 
-## RestHandler Base Class (BoxLang)
+## RestHandler Base Class
 
 ```boxlang
 class Users extends coldbox.system.RestHandler {
@@ -181,8 +181,142 @@ class Users extends coldbox.system.RestHandler {
     }
 }
 ```
+**CFML (`.cfc`):**
 
-## API Module Configuration (BoxLang)
+```cfml
+class Users extends coldbox.system.RestHandler {
+
+        property name="userService" inject="userService";
+
+    // Runs before every action - great for input validation
+    function preHandler( event, rc, prc, action ) {
+        // Validate content type for mutation methods
+        if( !listFindNoCase( "index,show", action ) ){
+            if( !event.isPost() && !event.isPut() && !event.isPatch() ){
+                return
+            }
+            validateContentType( event )
+        }
+    }
+
+    /**
+     * GET /api/v1/users
+     */
+    function index( event, rc, prc ) {
+        var users = userService.list(
+            page    = rc.page ?: 1,
+            limit   = rc.limit ?: 25,
+            filters = getFilters( rc )
+        )
+
+        event.renderData(
+            data = {
+                "data"       : users.getRecords(),
+                "pagination" : users.getPagination()
+            },
+            statusCode = 200
+        )
+    }
+
+    /**
+     * GET /api/v1/users/:id
+     */
+    function show( event, rc, prc ) {
+        var user = userService.getById( rc.id ?: 0 )
+
+        if( isNull( user ) ){
+            return apiNotFound( "User not found" )
+        }
+
+        event.renderData( data = user.getMemento(), statusCode = 200 )
+    }
+
+    /**
+     * POST /api/v1/users
+     */
+    function create( event, rc, prc ) {
+        var payload = event.getHTTPContent( json = true )
+        var result  = userService.create( payload )
+
+        if( result.hasErrors() ){
+            return apiValidationFailed( result.getErrors() )
+        }
+
+        event.renderData( data = result.getMemento(), statusCode = 201 )
+    }
+
+    /**
+     * PUT /api/v1/users/:id
+     */
+    function update( event, rc, prc ) {
+        var payload = event.getHTTPContent( json = true )
+        var result  = userService.update( rc.id ?: 0, payload )
+
+        if( isNull( result ) ){
+            return apiNotFound( "User not found" )
+        }
+
+        if( result.hasErrors() ){
+            return apiValidationFailed( result.getErrors() )
+        }
+
+        event.renderData( data = result.getMemento(), statusCode = 200 )
+    }
+
+    /**
+     * DELETE /api/v1/users/:id
+     */
+    function delete( event, rc, prc ) {
+        var deleted = userService.delete( rc.id ?: 0 )
+
+        if( !deleted ){
+            return apiNotFound( "User not found" )
+        }
+
+        event.renderData( data = "", statusCode = 204 )
+    }
+
+    // Private helpers
+
+    private function getFilters( rc ) {
+        return {
+            search : rc.search ?: "",
+            role   : rc.role ?: "",
+            active : rc.active ?: ""
+        }
+    }
+
+    private function apiNotFound( message ) {
+        event.renderData(
+            data       = { "error": message, "statusCode": 404 },
+            statusCode = 404
+        )
+    }
+
+    private function apiValidationFailed( errors ) {
+        event.renderData(
+            data = {
+                "error"      : "Validation failed",
+                "errors"     : errors,
+                "statusCode" : 422
+            },
+            statusCode = 422
+        )
+    }
+
+    private function validateContentType( event ) {
+        if( event.getHTTPHeader( "Content-Type", "" ) does not contain "application/json" ){
+            event.renderData(
+                data       = { "error": "Content-Type must be application/json" },
+                statusCode = 415
+            )
+            event.noRender( false )
+        }
+    }
+}
+```
+
+## API Module Configuration
 
 ```boxlang
 // modules_app/api/ModuleConfig.cfc
@@ -216,8 +350,42 @@ class Router extends coldbox.system.web.routing.Router {
     }
 }
 ```
+**CFML (`.cfc`):**
 
-## JWT Authentication (BoxLang)
+```cfml
+// modules_app/api/ModuleConfig.cfc
+component ModuleConfig {
+
+    property name="title"       default="API Module";
+    property name="description" default="REST API";
+    property name="version"     default="1.0.0";
+    property name="entryPoint"  default="api";
+    property name="author"      default="Ortus Solutions";
+
+    function configure() {
+        // Module settings
+        settings = {
+            jwtSecret     : getSystemSetting( "JWT_SECRET", "" ),
+            tokenExpiry   : 60, // minutes
+            refreshExpiry : 10080 // 7 days
+        }
+    }
+}
+
+// modules_app/api/config/Router.cfc
+class Router extends coldbox.system.web.routing.Router {
+
+    function configure() {
+        // V1 resource routes
+        group( pattern = "/v1" ) {
+            resources( "users" )
+            resources( "posts" )
+        }
+    }
+}
+```
+
+## JWT Authentication
 
 ```boxlang
 class Auth extends coldbox.system.RestHandler {
@@ -284,8 +452,73 @@ class Auth extends coldbox.system.RestHandler {
     }
 }
 ```
+**CFML (`.cfc`):**
 
-## API Versioning (BoxLang)
+```cfml
+class Auth extends coldbox.system.RestHandler {
+
+        property name="authService" inject="authService";
+
+        property name="jwtService" inject="jwtService";
+
+    /**
+     * POST /api/v1/auth/login
+     */
+    function login( event, rc, prc ) {
+        var credentials = event.getHTTPContent( json = true )
+
+        if( !authService.authenticate( credentials.email, credentials.password ) ){
+            event.renderData(
+                data       = { "error": "Invalid credentials" },
+                statusCode = 401
+            )
+            return
+        }
+
+        var user  = authService.getAuthenticatedUser()
+        var token = jwtService.fromUser( user )
+
+        event.renderData(
+            data = {
+                "access_token"  : token,
+                "token_type"    : "Bearer",
+                "expires_in"    : 3600,
+                "user"          : user.getMemento()
+            },
+            statusCode = 200
+        )
+    }
+
+    /**
+     * POST /api/v1/auth/refresh
+     */
+    function refresh( event, rc, prc ) {
+        var bearer = getBearerToken( event )
+        var token  = jwtService.refreshToken( bearer )
+
+        event.renderData(
+            data = { "access_token": token, "token_type": "Bearer" },
+            statusCode = 200
+        )
+    }
+
+    /**
+     * POST /api/v1/auth/logout
+     */
+    function logout( event, rc, prc ) {
+        var bearer = getBearerToken( event )
+        jwtService.invalidateToken( bearer )
+        event.renderData( data = { "message": "Logged out" }, statusCode = 200 )
+    }
+
+    private function getBearerToken( event ) {
+        var header = event.getHTTPHeader( "Authorization", "" )
+        return replaceNoCase( header, "Bearer ", "", "one" )
+    }
+}
+```
+
+## API Versioning
 
 ```boxlang
 // Using modules for versioning
@@ -296,6 +529,34 @@ class ModuleConfig {
 
 // modules_app/apiV2/ModuleConfig.cfc
 class ModuleConfig {
+    property name="entryPoint" default="api/v2";
+}
+
+// URL-based versioning
+group( pattern = "/api/v1" ) {
+    resources( "users" )
+}
+group( pattern = "/api/v2" ) {
+    resources( "users" )
+}
+
+// Header-based versioning
+function preHandler( event, rc, prc, action ) {
+    var version = event.getHTTPHeader( "Accept-Version", "v1" )
+    prc.apiVersion = version
+}
+```
+**CFML (`.cfc`):**
+
+```cfml
+// Using modules for versioning
+// modules_app/apiV1/ModuleConfig.cfc
+component ModuleConfig {
+    property name="entryPoint" default="api/v1";
+}
+
+// modules_app/apiV2/ModuleConfig.cfc
+component ModuleConfig {
     property name="entryPoint" default="api/v2";
 }
 

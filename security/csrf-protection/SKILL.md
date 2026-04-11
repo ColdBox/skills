@@ -121,6 +121,35 @@ class extends="coldbox.system.EventHandler" {
     }
 }
 ```
+**CFML (`.cfc`):**
+
+```cfml
+/**
+ * handlers/Users.cfc
+ */
+component extends="coldbox.system.EventHandler" {
+
+    // POST /users
+    function store( event, rc, prc ) {
+        // cbcsrf automatically validates on POST actions
+        // If token is invalid it throws an exception
+
+        // Manual validation if needed:
+        if ( !verifyCSRFToken( rc._csrftoken ) ) {
+            flash.put( "error", "Invalid security token. Please try again." )
+            relocate( "users.create" )
+        }
+
+        userService.create( {
+            name:  rc.name,
+            email: rc.email
+        } )
+
+        flash.put( "success", "User created!" )
+        relocate( "users.index" )
+    }
+}
+```
 
 ## CSRF with AJAX Requests
 
@@ -165,6 +194,36 @@ moduleSettings = {
  * Global CSRF validation for all POST requests
  */
 class extends="coldbox.system.Interceptor" {
+
+    function preProcess( event, interceptData ) {
+        // Only check state-changing methods
+        if ( !listContains( "POST,PUT,PATCH,DELETE", event.getHTTPMethod() ) ) {
+            return
+        }
+
+        // Skip API routes (use JWT instead)
+        if ( event.getCurrentEvent() startsWith "api." ) {
+            return
+        }
+
+        // Validate token
+        var token = event.getValue( "_csrftoken", "" )
+
+        if ( !verifyCSRFToken( token ) ) {
+            flash.put( "error", "Your session may have expired. Please try again." )
+            relocate( event.getCurrentRoutedURL() )
+        }
+    }
+}
+```
+**CFML (`.cfc`):**
+
+```cfml
+/**
+ * interceptors/CSRFInterceptor.cfc
+ * Global CSRF validation for all POST requests
+ */
+component extends="coldbox.system.Interceptor" {
 
     function preProcess( event, interceptData ) {
         // Only check state-changing methods

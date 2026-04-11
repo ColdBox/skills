@@ -252,6 +252,27 @@ class singleton {
     }
 }
 ```
+**CFML (`.cfc`):**
+
+```cfml
+// Service method using QB
+component singleton {
+    property name="qb" inject="QueryBuilder@qb"
+
+    function activeUsers() {
+        return qb.from( "users" )
+            .where( "active", 1 )
+            .whereNull( "deletedAt" )
+    }
+
+    function getAdmins() {
+        return activeUsers()
+            .where( "role", "admin" )
+            .orderBy( "name" )
+            .get()
+    }
+}
+```
 
 ## QB Method Quick Reference
 

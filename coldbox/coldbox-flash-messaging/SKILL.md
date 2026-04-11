@@ -126,7 +126,7 @@ moduleSettings = {
 }
 ```
 
-### Using CBMessageBox in Handlers (BoxLang)
+### Using CBMessageBox in Handlers
 
 ```boxlang
 class Users extends coldbox.system.EventHandler {
@@ -222,6 +222,50 @@ class Posts extends coldbox.system.EventHandler {
 
     @inject
     property name="postService";
+
+    @inject
+    property name="MessageBox@cbmessagebox";
+
+    // GET /posts/new → show form
+    function create( event, rc, prc ) {
+        // Restore form data from failed submit
+        prc.post     = postService.new( flash.get( "formData", {} ) )
+        prc.errors   = flash.get( "errors", [] )
+        event.setView( "posts/create" )
+    }
+
+    // POST /posts → store new post
+    function store( event, rc, prc ) {
+        var result = postService.create( rc )
+
+        if( result.hasErrors() ){
+            // Store validation errors and form data in flash
+            flash.put( "errors", result.getErrors() )
+            flash.put( "formData", rc )
+            // Redirect back to form (POST → REDIRECT → GET)
+            relocate( "posts.create" )
+            return
+        }
+
+        // Success redirect to show
+        MessageBox.success( "Post '#rc.title#' published!" )
+        relocate( "posts.show", { id: result.getId() } )
+    }
+
+    // GET /posts/:id → show single
+    function show( event, rc, prc ) {
+        prc.post = postService.getById( rc.id ?: 0 )
+        event.setView( "posts/show" )
+    }
+}
+```
+**CFML (`.cfc`):**
+
+```cfml
+// Full PRG workflow example
+class Posts extends coldbox.system.EventHandler {
+
+        property name="postService" inject="postService";
 
     @inject
     property name="MessageBox@cbmessagebox";

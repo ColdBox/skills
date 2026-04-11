@@ -116,6 +116,38 @@ class extends="coldbox.system.EventHandler" {
     }
 }
 ```
+**CFML (`.cfc`):**
+
+```cfml
+component extends="coldbox.system.EventHandler" {
+
+    property name="cbsecurity" inject="@cbsecurity"
+
+    function edit( event, rc, prc ) {
+        // Single role check
+        if ( !cbsecurity.has( "admin" ) ) {
+            cbsecurity.block( "Admin access required" )
+        }
+
+        // OR logic — any of these roles passes
+        if ( !cbsecurity.has( "admin,manager" ) ) {
+            cbsecurity.block( "Insufficient privileges" )
+        }
+
+        // AND logic — user must have all these roles
+        if ( !cbsecurity.all( "admin,moderator" ) ) {
+            cbsecurity.block( "Need both admin and moderator roles" )
+        }
+
+        // Permission check
+        if ( !cbsecurity.can( "users.edit" ) ) {
+            cbsecurity.block( "Missing permission: users.edit" )
+        }
+
+        event.setView( "users/edit" )
+    }
+}
+```
 
 ## @secured Annotation (Handler-Level)
 
@@ -125,6 +157,40 @@ class extends="coldbox.system.EventHandler" {
  * @secured
  */
 class extends="coldbox.system.EventHandler" {
+
+    /**
+     * Requires admin role
+     * @secured admin
+     */
+    function deleteUser( event, rc, prc ) {
+        // Only admin role gets here
+    }
+
+    /**
+     * Requires specific permission
+     * @secured users.create
+     */
+    function create( event, rc, prc ) {
+        // Only users with users.create permission get here
+    }
+
+    /**
+     * Requires role AND permission
+     * @secured admin,users.delete
+     */
+    function destroy( event, rc, prc ) {
+        // Requires admin role AND users.delete permission
+    }
+}
+```
+**CFML (`.cfc`):**
+
+```cfml
+/**
+ * Secure entire handler (all actions require login)
+ * // @secured (use cbsecurity annotation: secured="true")
+ */
+component extends="coldbox.system.EventHandler" {
 
     /**
      * Requires admin role
@@ -174,12 +240,58 @@ class extends="coldbox.system.EventHandler" {
     }
 }
 ```
+**CFML (`.cfc`):**
+
+```cfml
+component extends="coldbox.system.EventHandler" {
+
+    property name="cbsecurity"  inject="@cbsecurity"
+    property name="postService" inject="PostService"
+    property name="auth"        inject="authenticationService@cbauth"
+
+    function edit( event, rc, prc ) {
+        event.paramValue( "id", 0 )
+        prc.post = postService.findById( rc.id )
+
+        // Resource-owner check (user owns this resource)
+        if ( prc.post.authorId != auth.getUserId() && !cbsecurity.has( "admin" ) ) {
+            cbsecurity.block( "You can only edit your own posts" )
+        }
+
+        event.setView( "posts/edit" )
+    }
+}
+```
 
 ## Permission-Based Authorization
 
 ```boxlang
 // models/User.cfc — user entity with roles/permissions
 class {
+
+    property name="id"
+    property name="name"
+    property name="roles" default=""
+    property name="permissions" default=""
+
+    function hasRole( required role ) {
+        return listContains( variables.roles, arguments.role )
+    }
+
+    function can( required permission ) {
+        return listContains( variables.permissions, arguments.permission )
+    }
+
+    function getRolesList() {
+        return listToArray( variables.roles )
+    }
+}
+```
+**CFML (`.cfc`):**
+
+```cfml
+// models/User.cfc — user entity with roles/permissions
+component {
 
     property name="id"
     property name="name"

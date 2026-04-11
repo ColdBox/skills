@@ -110,6 +110,70 @@ class singleton {
     }
 }
 ```
+**CFML (`.cfc`):**
+
+```cfml
+/**
+ * models/PasskeyStorageService.cfc
+ * Implements the IPasskeyStorage interface from cbsecurity-passkeys.
+ */
+component singleton {
+
+    // Store a newly registered passkey credential
+    function storeCredential( required struct credential ) {
+        queryExecute(
+            "INSERT INTO passkeys
+                (id, user_id, credential_id, public_key, sign_count, device_name, created_at)
+             VALUES
+                (:id, :userId, :credentialId, :publicKey, :signCount, :deviceName, NOW())",
+            {
+                id:           createUUID(),
+                userId:       arguments.credential.userID,
+                credentialId: arguments.credential.id,
+                publicKey:    arguments.credential.publicKey,
+                signCount:    arguments.credential.signCount ?: 0,
+                deviceName:   arguments.credential.deviceName ?: "Unknown Device"
+            }
+        )
+    }
+
+    // Retrieve a credential by its WebAuthn credential ID
+    function getCredential( required credentialId ) {
+        var qry = queryExecute(
+            "SELECT * FROM passkeys WHERE credential_id = :id",
+            { id: arguments.credentialId }
+        )
+        if ( !qry.recordCount ) return javaCast( "null", "" )
+        return queryRowToStruct( qry, 1 )
+    }
+
+    // Update sign count after successful authentication (replay attack prevention)
+    function updateSignCount( required credentialId, required signCount ) {
+        queryExecute(
+            "UPDATE passkeys SET sign_count = :count, last_used = NOW()
+             WHERE credential_id = :id",
+            { count: arguments.signCount, id: arguments.credentialId }
+        )
+    }
+
+    // List all passkeys for a given user
+    function getCredentialsForUser( required userID ) {
+        return queryExecute(
+            "SELECT * FROM passkeys WHERE user_id = :userId AND revoked = 0
+             ORDER BY created_at DESC",
+            { userId: arguments.userID }
+        )
+    }
+
+    // Revoke a specific passkey
+    function revokeCredential( required credentialId ) {
+        queryExecute(
+            "UPDATE passkeys SET revoked = 1 WHERE credential_id = :id",
+            { id: arguments.credentialId }
+        )
+    }
+}
+```
 
 ## Passkeys Handler
 
@@ -118,6 +182,116 @@ class singleton {
  * handlers/Passkeys.cfc
  */
 class extends="coldbox.system.EventHandler" {
+
+    property name="passkeyService" inject="@cbsecurity-passkeys"
+    property name="cbauth"         inject="@cbauth"
+    property name="userService"    inject="UserService"
+
+    // ─── Registration ───────────────────────────────────────────────────────
+
+    /**
+     * GET /passkeys/register/options
+     * Returns challenge options for the browser's navigator.credentials.create()
+     */
+    function registrationOptions( event, rc, prc ) {
+        secured()
+
+        var options = passkeyService.generateRegistrationOptions(
+            user: prc.currentUser
+        )
+        return event.renderData( type = "json", data = options )
+    }
+
+    /**
+     * POST /passkeys/register/verify
+     * Accepts the browser's credential and stores the passkey.
+     */
+    function registrationVerify( event, rc, prc ) {
+        secured()
+
+        try {
+            passkeyService.verifyRegistration(
+                user:       prc.currentUser,
+                credential: rc.credential  // JSON from browser
+            )
+            return event.renderData( type = "json", data = { success: true } )
+        } catch ( any e ) {
+            return event.renderData(
+                type       = "json",
+                data       = { success: false, error: e.message },
+                statusCode = 400
+            )
+        }
+    }
+
+    // ─── Authentication ──────────────────────────────────────────────────────
+
+    /**
+     * POST /passkeys/auth/options
+     * Returns the authentication challenge for navigator.credentials.get()
+     * Body may optionally contain { email } to filter by user.
+     */
+    function authOptions( event, rc, prc ) {
+        var options = passkeyService.generateAuthenticationOptions(
+            email: rc.email ?: ""
+        )
+        return event.renderData( type = "json", data = options )
+    }
+
+    /**
+     * POST /passkeys/auth/verify
+     * Verifies the signed assertion from the browser; logs user in.
+     */
+    function authVerify( event, rc, prc ) {
+        try {
+            var result = passkeyService.verifyAuthentication( rc.credential )
+            var user   = userService.findById( result.userID )
+
+            cbauth.login( user )
+
+            return event.renderData( type = "json", data = {
+                success:  true,
+                redirect: event.buildLink( "dashboard" )
+            } )
+        } catch ( any e ) {
+            return event.renderData(
+                type       = "json",
+                data       = { success: false, error: "Authentication failed" },
+                statusCode = 401
+            )
+        }
+    }
+
+    // ─── Device Management ───────────────────────────────────────────────────
+
+    /**
+     * GET /passkeys
+     * List current user's registered passkeys.
+     */
+    function list( event, rc, prc ) {
+        secured()
+        var keys = passkeyService.listForUser( prc.currentUser.getID() )
+        return event.renderData( type = "json", data = keys )
+    }
+
+    /**
+     * DELETE /passkeys/:credentialID
+     * Revoke a specific passkey.
+     */
+    function revoke( event, rc, prc ) {
+        secured()
+        passkeyService.revokeCredential( rc.credentialID )
+        return event.renderData( type = "json", data = { message: "Passkey removed" } )
+    }
+}
+```
+**CFML (`.cfc`):**
+
+```cfml
+/**
+ * handlers/Passkeys.cfc
+ */
+component extends="coldbox.system.EventHandler" {
 
     property name="passkeyService" inject="@cbsecurity-passkeys"
     property name="cbauth"         inject="@cbauth"

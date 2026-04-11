@@ -55,7 +55,7 @@ modules_app/
       ModuleInterceptor.cfc
 ```
 
-## ModuleConfig.cfc (BoxLang)
+## ModuleConfig.cfc
 
 ```boxlang
 class ModuleConfig {
@@ -121,8 +121,74 @@ class ModuleConfig {
     }
 }
 ```
+**CFML (`.cfc`):**
 
-## Module Router (BoxLang)
+```cfml
+component ModuleConfig {
+
+    // ======================================================
+    // Module Properties
+    // ======================================================
+    property name="title"           default="My Module";
+    property name="description"     default="A ColdBox module";
+    property name="version"         default="1.0.0";
+    property name="author"          default="Your Name";
+    property name="webURL"          default="https://example.com";
+    property name="entryPoint"      default="mymodule";
+    property name="cfmapping"       default="myModule";
+    property name="autoMapModels"   default="true";
+
+    // ======================================================
+    // Module Configuration
+    // ======================================================
+    function configure() {
+        // Module settings (configurable from host app)
+        settings = {
+            apiKey    : "",
+            timeout   : 30,
+            debug     : false
+        }
+
+        // Optional layout settings
+        layoutSettings = {
+            defaultLayout : "Module"
+        }
+
+        // Module-specific interceptors
+        interceptors = [
+            {
+                class : "#moduleMapping#.interceptors.ModuleInterceptor",
+                name  : "MyModuleInterceptor"
+            }
+        ]
+
+        // Module-specific CacheBox caches
+        cachebox = {}
+
+        // WireBox binder config path
+        wirebox = {
+            binder : "#moduleMapping#.config.WireBox"
+        }
+    }
+
+    // ======================================================
+    // Lifecycle Hooks
+    // ======================================================
+
+    function onLoad() {
+        // Runs when module is loaded (after configure())
+        var settings = controller.getModuleSettings( "myModule" )
+        log.info( "myModule loaded with settings: #settings.toString()#" )
+    }
+
+    function onUnload() {
+        // Runs when module is unloaded
+        log.info( "myModule unloaded" )
+    }
+}
+```
+
+## Module Router
 
 ```boxlang
 // modules_app/myModule/config/Router.cfc
@@ -149,7 +215,7 @@ class Router extends coldbox.system.web.routing.Router {
 }
 ```
 
-## Module Handler (BoxLang)
+## Module Handler
 
 ```boxlang
 class Dashboard extends coldbox.system.EventHandler {
@@ -168,8 +234,26 @@ class Dashboard extends coldbox.system.EventHandler {
     }
 }
 ```
+**CFML (`.cfc`):**
 
-## Module Service (BoxLang)
+```cfml
+class Dashboard extends coldbox.system.EventHandler {
+
+        property name="widgetService" inject="widgetService";
+
+    // Get module settings in handler
+    property name="settings" inject="coldbox:moduleSettings:myModule";
+
+    function index( event, rc, prc ) {
+        prc.widgets   = widgetService.list()
+        prc.pageTitle = "Dashboard"
+        prc.apiKey    = settings.apiKey
+        event.setView( "dashboard/index" )
+    }
+}
+```
+
+## Module Service
 
 ```boxlang
 class WidgetService {
@@ -180,6 +264,34 @@ class WidgetService {
 
     @inject
     property name="wirebox";
+
+    function list() {
+        return queryExecute(
+            "SELECT * FROM widgets ORDER BY created_at DESC",
+            {},
+            { datasource: settings.datasource ?: "myapp" }
+        )
+    }
+
+    function getById( id ) {
+        var result = queryExecute(
+            "SELECT * FROM widgets WHERE id = :id",
+            { id: { value: id, cfsqltype: "integer" } },
+            { datasource: settings.datasource ?: "myapp" }
+        )
+        return result.recordcount ? result : javaCast( "null", "" )
+    }
+}
+```
+**CFML (`.cfc`):**
+
+```cfml
+component WidgetService {
+
+    // Injected module settings
+        property name="settings" inject="coldbox:moduleSettings:myModule";
+
+        property name="wirebox" inject="wirebox";
 
     function list() {
         return queryExecute(
@@ -222,7 +334,7 @@ class WidgetService {
 }
 ```
 
-## Overriding Module Settings from Host App (BoxLang)
+## Overriding Module Settings from Host App
 
 ```boxlang
 // config/ColdBox.cfc → moduleSettings
@@ -235,7 +347,7 @@ moduleSettings = {
 }
 ```
 
-## Module Interceptors (BoxLang)
+## Module Interceptors
 
 ```boxlang
 // modules_app/myModule/interceptors/ModuleInterceptor.cfc
@@ -255,7 +367,7 @@ class ModuleInterceptor extends coldbox.system.Interceptor {
 }
 ```
 
-## Module WireBox Binder (BoxLang)
+## Module WireBox Binder
 
 ```boxlang
 // modules_app/myModule/config/WireBox.cfc

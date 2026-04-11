@@ -74,11 +74,62 @@ class UserService {
     }
 }
 ```
+**CFML (`.cfc`):**
+
+```cfml
+component UserService {
+
+    // Inject by type name (auto-discover)
+        property name="userRepository" inject="userRepository";
+
+    // Inject with explicit mapping name
+        property name="userRepo" inject="UserRepository";
+
+    // Inject a specific interface implementation
+        property name="paymentGateway" inject="IPaymentGateway";
+
+    // Inject a ColdBox-specific object via DSL
+        property name="appName" inject="coldbox:setting:appName";
+
+        property name="moduleSettings" inject="coldbox:moduleSettings:myModule";
+
+        property name="cache" inject="coldbox:cacheBox:default";
+
+        property name="logBox" inject="coldbox:logBox";
+
+        property name="log" inject="logBox:logger:{this}";
+
+    // Inject ColdBox itself
+        property name="controller" inject="coldbox";
+
+    function init() {
+        return this
+    }
+}
+```
 
 ## Constructor Injection
 
 ```boxlang
 class OrderService {
+
+    function init( required OrderRepository orderRepo, required UserService userService ) {
+        variables.orderRepo  = arguments.orderRepo
+        variables.userService = arguments.userService
+        return this
+    }
+
+    function create( data ) {
+        var user  = userService.getById( data.userId )
+        var order = orderRepo.create( data )
+        return order
+    }
+}
+```
+**CFML (`.cfc`):**
+
+```cfml
+component OrderService {
 
     function init( required OrderRepository orderRepo, required UserService userService ) {
         variables.orderRepo  = arguments.orderRepo
@@ -212,6 +263,28 @@ class MyHandler extends coldbox.system.EventHandler {
     }
 }
 ```
+**CFML (`.cfc`):**
+
+```cfml
+class MyHandler extends coldbox.system.EventHandler {
+
+        property name="wirebox" inject="wirebox";
+
+    function createWidget( event, rc, prc ) {
+        // Manually get an instance
+        var widget = wirebox.getInstance( "models.Widget" )
+
+        // Get with override arguments
+        var service = wirebox.getInstance(
+            name         = "models.MailService",
+            initArguments = { debug: true }
+        )
+
+        // Get by DSL
+        var cache = wirebox.getInstance( dsl = "cachebox:default" )
+    }
+}
+```
 
 ## Lazy Injection with Provider
 
@@ -221,6 +294,23 @@ class UserService {
     // Provider wraps an expensive service in a lazy loader
     @inject( "provider:ExpensivePDFService" )
     property name="pdfProvider";
+
+    function generateReport( user ) {
+        if( user.hasPDFAccess() ){
+            // Only gets created when actually called
+            return pdfProvider.$get().generate( user )
+        }
+        return ""
+    }
+}
+```
+**CFML (`.cfc`):**
+
+```cfml
+component UserService {
+
+    // Provider wraps an expensive service in a lazy loader
+        property name="pdfProvider" inject="provider:ExpensivePDFService";
 
     function generateReport( user ) {
         if( user.hasPDFAccess() ){

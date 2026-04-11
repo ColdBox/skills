@@ -31,7 +31,7 @@ LogBox provides:
 - **WireBox integration** — inject loggers anywhere via DSL
 - **Structured logging** — log with extra contextual data
 
-## LogBox Configuration (BoxLang)
+## LogBox Configuration
 
 ```boxlang
 // config/LogBox.cfc (standalone) OR inline in ColdBox.cfc
@@ -107,7 +107,7 @@ class LogBox extends coldbox.system.logging.config.LogBoxConfig {
 }
 ```
 
-## Logger Injection in Services (BoxLang)
+## Logger Injection in Services
 
 ```boxlang
 class UserService {
@@ -123,6 +123,53 @@ class UserService {
     // Inject a named logger
     @inject( "logbox:logger:models.UserService" )
     property name="userLog";
+
+    function create( data ) {
+        log.info( "Creating user: #data.email#" )
+
+        try {
+            var user = userRepository.create( data )
+            log.info( "User created with ID #user.getId()#" )
+            return user
+        } catch( any e ){
+            log.error( "Failed to create user: #e.message#", e )
+            rethrow
+        }
+    }
+
+    function authenticate( email, password ) {
+        log.debug( "Authentication attempt for: #email#" )
+
+        var user = userRepository.findByEmail( email )
+        if( isNull( user ) ){
+            log.warn( "Authentication failed - user not found: #email#" )
+            return false
+        }
+
+        var success = passwordEncoder.matches( password, user.getPasswordHash() )
+        if( !success ){
+            log.warn( "Authentication failed - invalid password for: #email#" )
+        } else {
+            log.info( "User authenticated: #email#" )
+        }
+
+        return success
+    }
+}
+```
+**CFML (`.cfc`):**
+
+```cfml
+component UserService {
+
+    // Inject a logger for this class category
+        property name="log" inject="logBox:logger:{this}";
+
+    // Inject the root logger
+        property name="rootLog" inject="logBox:root";
+
+    // Inject a named logger
+        property name="userLog" inject="logbox:logger:models.UserService";
 
     function create( data ) {
         log.info( "Creating user: #data.email#" )
@@ -193,6 +240,40 @@ class ExampleService {
     }
 }
 ```
+**CFML (`.cfc`):**
+
+```cfml
+component ExampleService {
+
+        property name="log" inject="logBox:logger:{this}";
+
+    function demonstrate() {
+        // TRACE — very fine-grained diagnostic info
+        log.trace( "Entering method with arg: #arg#" )
+
+        // DEBUG — diagnostic info useful during development
+        log.debug( "Query result count: #results.recordcount#" )
+
+        // INFO — significant business events
+        log.info( "User #userId# subscribed to plan #planId#" )
+
+        // WARN — something unexpected but still working
+        log.warn( "Deprecated API used by #callerInfo#" )
+
+        // ERROR — an error condition, but app continues
+        log.error( "Payment gateway timeout for order #orderId#", exception )
+
+        // FATAL — severe error, application may not continue
+        log.fatal( "Database connection pool exhausted" )
+
+        // Check if level is enabled before expensive operations
+        if( log.canDebug() ){
+            var expensiveData = buildDebugData()
+            log.debug( "Debug data: #expensiveData.toString()#" )
+        }
+    }
+}
+```
 
 ## Structured Logging with Extra Data
 
@@ -201,6 +282,51 @@ class OrderService {
 
     @inject( "logBox:logger:{this}" )
     property name="log";
+
+    function processOrder( order ) {
+        // Log with structured extra data (JSON-friendly)
+        log.info(
+            "Order processing started",
+            {
+                orderId    : order.getId(),
+                userId     : order.getUserId(),
+                total      : order.getTotal(),
+                itemCount  : order.getItems().len(),
+                timestamp  : now()
+            }
+        )
+
+        try {
+            var result = paymentService.charge( order )
+
+            log.info(
+                "Payment successful",
+                {
+                    orderId         : order.getId(),
+                    transactionId   : result.transactionId,
+                    amount          : result.amount
+                }
+            )
+        } catch( PaymentException e ){
+            log.error(
+                "Payment failed",
+                {
+                    orderId : order.getId(),
+                    error   : e.message,
+                    code    : e.errorCode
+                }
+            )
+            rethrow
+        }
+    }
+}
+```
+**CFML (`.cfc`):**
+
+```cfml
+component OrderService {
+
+        property name="log" inject="logBox:logger:{this}";
 
     function processOrder( order ) {
         // Log with structured extra data (JSON-friendly)

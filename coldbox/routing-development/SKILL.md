@@ -40,7 +40,7 @@ ColdBox routing maps URLs to handler actions via `config/Router.cfc`:
 5. Name routes for reference in templates
 6. Order routes from most-specific to least-specific
 
-## Basic Router.cfc (BoxLang)
+## Basic Router.cfc
 
 ```boxlang
 class Router extends coldbox.system.web.routing.Router {
@@ -86,7 +86,7 @@ class Router extends coldbox.system.web.routing.Router {
 | PATCH    | /users/:id      | users.update    |
 | DELETE   | /users/:id      | users.delete    |
 
-## Route Groups (BoxLang)
+## Route Groups
 
 ```boxlang
 // API versioning group
@@ -120,7 +120,7 @@ group(
 }
 ```
 
-## Routes with Constraints (BoxLang)
+## Routes with Constraints
 
 ```boxlang
 // Numeric ID constraint
@@ -148,7 +148,7 @@ route(
 route( "/search/:term?", "search.index" )
 ```
 
-## HTTP Verb-Specific Routes (BoxLang)
+## HTTP Verb-Specific Routes
 
 ```boxlang
 // Explicit HTTP methods
@@ -165,7 +165,7 @@ route(
 ).methods( "GET,HEAD" )
 ```
 
-## Named Routes in Views (BoxLang)
+## Named Routes in Views
 
 ```boxlang
 // In handler
@@ -179,7 +179,7 @@ var userLink = buildLink( "users.show", { id: prc.user.getId() } )
 <a href="#buildLink( routeName = 'user.profile', queryString = { tab: 'settings' } )#">Profile</a>
 ```
 
-## API Router (Dedicated) (BoxLang)
+## API Router (Dedicated)
 
 ```boxlang
 // config/Router.cfc

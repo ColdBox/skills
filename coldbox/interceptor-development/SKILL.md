@@ -48,7 +48,7 @@ ColdBox interceptors:
 | Module          | `preModuleLoad`               | Before module loads              |
 | Module          | `postModuleLoad`              | After module loads               |
 
-## Basic Interceptor Structure (BoxLang)
+## Basic Interceptor Structure
 
 ```boxlang
 class LoggingInterceptor extends coldbox.system.Interceptor {
@@ -76,8 +76,35 @@ class LoggingInterceptor extends coldbox.system.Interceptor {
     }
 }
 ```
+**CFML (`.cfc`):**
 
-## Security Interceptor (BoxLang)
+```cfml
+class LoggingInterceptor extends coldbox.system.Interceptor {
+
+        property name="logService" inject="logService";
+
+    function configure() {
+        // Called on startup — initialize settings
+        log.info( "LoggingInterceptor configured" )
+    }
+
+    function preProcess( event, rc, prc, interceptData ) {
+        // Log every incoming request
+        log.info( "Request started: #event.getCurrentEvent()#", {
+            method    : event.getHTTPMethod(),
+            ip        : event.getClientIP(),
+            userAgent : event.getHTTPHeader( "User-Agent", "" )
+        } )
+    }
+
+    function postProcess( event, rc, prc, interceptData ) {
+        // Log after processing
+        log.info( "Request completed: #event.getCurrentEvent()#" )
+    }
+}
+```
+
+## Security Interceptor
 
 ```boxlang
 class SecurityInterceptor extends coldbox.system.Interceptor {
@@ -116,8 +143,46 @@ class SecurityInterceptor extends coldbox.system.Interceptor {
     }
 }
 ```
+**CFML (`.cfc`):**
 
-## CORS Interceptor (BoxLang)
+```cfml
+class SecurityInterceptor extends coldbox.system.Interceptor {
+
+        property name="authService" inject="authService";
+
+    property name="securedRoutes" type="array";
+
+    function configure() {
+        securedRoutes = [
+            "/admin",
+            "/dashboard",
+            "/account"
+        ]
+    }
+
+    function preProcess( event, rc, prc, interceptData ) {
+        var currentURL = event.getCurrentRoutedURL()
+
+        // Check if route requires authentication
+        if( !requiresAuth( currentURL ) ){
+            return
+        }
+
+        // Check if user is authenticated
+        if( !authService.check() ){
+            flash.put( "error", "Please login to continue" )
+            flash.put( "returnTo", currentURL )
+            relocate( "security.login" )
+        }
+    }
+
+    private function requiresAuth( url ) {
+        return securedRoutes.some( ( route ) => url.startsWith( route ) )
+    }
+}
+```
+
+## CORS Interceptor
 
 ```boxlang
 class CORSInterceptor extends coldbox.system.Interceptor {
@@ -154,7 +219,7 @@ class CORSInterceptor extends coldbox.system.Interceptor {
 }
 ```
 
-## Rate Limiting Interceptor (BoxLang)
+## Rate Limiting Interceptor
 
 ```boxlang
 class RateLimitInterceptor extends coldbox.system.Interceptor {
@@ -203,7 +268,7 @@ class RateLimitInterceptor extends coldbox.system.Interceptor {
 }
 ```
 
-## Custom Interception Points (BoxLang)
+## Custom Interception Points
 
 ```boxlang
 // Declare custom interception point in ColdBox.cfc
@@ -252,8 +317,55 @@ class UserEventInterceptor extends coldbox.system.Interceptor {
     }
 }
 ```
+**CFML (`.cfc`):**
 
-## Registering Interceptors (BoxLang)
+```cfml
+// Declare custom interception point in ColdBox.cfc
+class ColdBox extends coldbox.system.Coldbox {
+
+    function configure() {
+        coldbox = {
+            customInterceptionPoints : [
+                "onUserCreated",
+                "onUserDeleted",
+                "onOrderPlaced",
+                "onPaymentProcessed"
+            ]
+        }
+    }
+}
+
+// Fire custom interception point from service
+component UserService {
+
+        property name="interceptorService" inject="interceptorService";
+
+    function create( data ) {
+        var user = userRepository.create( data )
+
+        // Announce custom interception event
+        announce(
+            "onUserCreated",
+            { user: user }
+        )
+
+        return user
+    }
+}
+
+// Listen to custom interception point in interceptor
+class UserEventInterceptor extends coldbox.system.Interceptor {
+
+        property name="emailService" inject="emailService";
+
+    function onUserCreated( event, rc, prc, interceptData ) {
+        var user = interceptData.user
+        emailService.sendWelcomeEmail( user )
+    }
+}
+```
+
+## Registering Interceptors
 
 ```boxlang
 // In ColdBox.cfc
@@ -293,8 +405,48 @@ class ModuleConfig {
     }
 }
 ```
+**CFML (`.cfc`):**
 
-## Asynchronous Interceptors (BoxLang)
+```cfml
+// In ColdBox.cfc
+class ColdBox extends coldbox.system.Coldbox {
+
+    function configure() {
+        // Register interceptors
+        interceptors = [
+            {
+                class  : "interceptors.CORSInterceptor",
+                name   : "CORSInterceptor",
+                properties : { allowedOrigins: "https://app.example.com" }
+            },
+            {
+                class  : "interceptors.RateLimitInterceptor",
+                name   : "RateLimitInterceptor",
+                properties : { rateLimitPerMinute: 100 }
+            },
+            {
+                class  : "interceptors.LoggingInterceptor",
+                name   : "LoggingInterceptor"
+            }
+        ]
+    }
+}
+
+// In module ModuleConfig.cfc
+component ModuleConfig {
+
+    function configure() {
+        interceptors = [
+            {
+                class : "#moduleMapping#.interceptors.ModuleInterceptor",
+                name  : "MyModuleInterceptor"
+            }
+        ]
+    }
+}
+```
+
+## Asynchronous Interceptors
 
 ```boxlang
 class AsyncEmailInterceptor extends coldbox.system.Interceptor {
@@ -304,6 +456,27 @@ class AsyncEmailInterceptor extends coldbox.system.Interceptor {
 
     @inject
     property name="emailService";
+
+    function onUserCreated( event, rc, prc, interceptData ) {
+        // Runs in a separate thread
+        emailService.sendWelcomeEmail( interceptData.user )
+    }
+
+    function onOrderPlaced( event, rc, prc, interceptData ) {
+        // Runs in a separate thread
+        emailService.sendOrderConfirmation( interceptData.order )
+    }
+}
+```
+**CFML (`.cfc`):**
+
+```cfml
+class AsyncEmailInterceptor extends coldbox.system.Interceptor {
+
+    // Run all listeners asynchronously
+    property name="asyncAll" default="true";
+
+        property name="emailService" inject="emailService";
 
     function onUserCreated( event, rc, prc, interceptData ) {
         // Runs in a separate thread

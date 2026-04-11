@@ -41,7 +41,7 @@ Handlers are ColdBox's controllers that:
 6. Add security annotations if needed
 7. Write handler tests
 
-## Basic Handler Template (BoxLang)
+## Basic Handler Template
 
 ```boxlang
 class extends="coldbox.system.EventHandler" {
@@ -129,8 +129,94 @@ class extends="coldbox.system.EventHandler" {
     }
 }
 ```
+**CFML (`.cfc`):**
 
-## REST Handler (BoxLang)
+```cfml
+component extends="coldbox.system.EventHandler" {
+
+        property name="userService" inject="userService";
+
+        property name="validationManager" inject="validationManager";
+
+    /**
+     * Display list of users
+     */
+    function index( event, rc, prc ) {
+        prc.users = userService.list(
+            page = rc.page ?: 1,
+            limit = rc.limit ?: 25
+        )
+        event.setView( "users/index" )
+    }
+
+    /**
+     * Display single user
+     */
+    function show( event, rc, prc ) {
+        prc.user = userService.getById( rc.id ?: 0 )
+        event.setView( "users/show" )
+    }
+
+    /**
+     * Display create form
+     */
+    function create( event, rc, prc ) {
+        prc.user = userService.new()
+        event.setView( "users/create" )
+    }
+
+    /**
+     * Store new user
+     */
+    function store( event, rc, prc ) {
+        var result = userService.create( rc )
+
+        if( result.hasErrors() ){
+            flash.put( "errors", result.getErrors() )
+            flash.put( "data", rc )
+            relocate( "users.create" )
+        }
+
+        flash.put( "success", "User created successfully" )
+        relocate( uri = "/users/#result.getId()#" )
+    }
+
+    /**
+     * Display edit form
+     */
+    function edit( event, rc, prc ) {
+        prc.user = userService.getById( rc.id ?: 0 )
+        event.setView( "users/edit" )
+    }
+
+    /**
+     * Update existing user
+     */
+    function update( event, rc, prc ) {
+        var result = userService.update( rc.id ?: 0, rc )
+
+        if( result.hasErrors() ){
+            flash.put( "errors", result.getErrors() )
+            flash.put( "data", rc )
+            relocate( "users.edit", { id: rc.id } )
+        }
+
+        flash.put( "success", "User updated successfully" )
+        relocate( uri = "/users/#rc.id#" )
+    }
+
+    /**
+     * Delete user
+     */
+    function delete( event, rc, prc ) {
+        userService.delete( rc.id ?: 0 )
+        flash.put( "success", "User deleted successfully" )
+        relocate( "users.index" )
+    }
+}
+```
+
+## REST Handler
 
 ```boxlang
 class api_Users extends coldbox.system.RestHandler {
@@ -179,8 +265,56 @@ class api_Users extends coldbox.system.RestHandler {
     }
 }
 ```
+**CFML (`.cfc`):**
 
-## Handler with Around Advices (BoxLang)
+```cfml
+class api_Users extends coldbox.system.RestHandler {
+
+        property name="userService" inject="userService";
+
+    function index( event, rc, prc ) {
+        var users = userService.list(
+            page = rc.page ?: 1,
+            limit = rc.limit ?: 25
+        )
+        event.renderData( data = users, statusCode = 200 )
+    }
+
+    function show( event, rc, prc ) {
+        var user = userService.getById( rc.id ?: 0 )
+        if( isNull( user ) ){
+            event.renderData( data = { "error": "User not found" }, statusCode = 404 )
+            return
+        }
+        event.renderData( data = user, statusCode = 200 )
+    }
+
+    function create( event, rc, prc ) {
+        var result = userService.create( rc )
+        if( result.hasErrors() ){
+            event.renderData( data = { "errors": result.getErrors() }, statusCode = 422 )
+            return
+        }
+        event.renderData( data = result, statusCode = 201 )
+    }
+
+    function update( event, rc, prc ) {
+        var result = userService.update( rc.id ?: 0, rc )
+        if( result.hasErrors() ){
+            event.renderData( data = { "errors": result.getErrors() }, statusCode = 422 )
+            return
+        }
+        event.renderData( data = result, statusCode = 200 )
+    }
+
+    function delete( event, rc, prc ) {
+        userService.delete( rc.id ?: 0 )
+        event.renderData( data = { "message": "User deleted successfully" }, statusCode = 204 )
+    }
+}
+```
+
+## Handler with Around Advices
 
 ```boxlang
 class Products extends coldbox.system.EventHandler {
@@ -216,7 +350,7 @@ class Products extends coldbox.system.EventHandler {
 }
 ```
 
-## Secured Handler (BoxLang)
+## Secured Handler
 
 ```boxlang
 class Admin extends coldbox.system.EventHandler {
@@ -245,6 +379,42 @@ class Admin extends coldbox.system.EventHandler {
 
     // Using security annotations (requires CBSecurity)
     @secured
+    @permissions( "admin.users.delete" )
+    function delete( event, rc, prc ) {
+        userService.delete( rc.id ?: 0 )
+        flash.put( "success", "User deleted" )
+        relocate( "admin.index" )
+    }
+}
+```
+**CFML (`.cfc`):**
+
+```cfml
+class Admin extends coldbox.system.EventHandler {
+
+    // Secure entire handler - requires authentication
+    this.preHandler = "checkAuth"
+
+        property name="userService" inject="userService";
+
+    private function checkAuth( event, rc, prc, action ) {
+        if( !auth().check() ){
+            flash.put( "error", "Please login to continue" )
+            relocate( "security.login" )
+        }
+        if( !auth().user().hasRole( "admin" ) ){
+            flash.put( "error", "Insufficient permissions" )
+            relocate( "main.index" )
+        }
+    }
+
+    function index( event, rc, prc ) {
+        prc.users = userService.list()
+        event.setView( "admin/index" )
+    }
+
+    // Using security annotations (requires CBSecurity)
+    // @secured (use cbsecurity annotation: secured="true")
     @permissions( "admin.users.delete" )
     function delete( event, rc, prc ) {
         userService.delete( rc.id ?: 0 )

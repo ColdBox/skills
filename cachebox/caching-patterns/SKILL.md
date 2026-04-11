@@ -30,7 +30,7 @@ CacheBox is the standalone caching framework in ColdFusion/BoxLang that:
 - Provides a consistent API across all providers
 - Is fully integrated with ColdBox and WireBox
 
-## CacheBox Configuration (BoxLang)
+## CacheBox Configuration
 
 ```boxlang
 // config/CacheBox.cfc
@@ -168,6 +168,76 @@ class ProductService {
     }
 }
 ```
+**CFML (`.cfc`):**
+
+```cfml
+component ProductService {
+
+        property name="cache" inject="cachebox:products";
+
+        property name="cacheBox" inject="cachebox";
+
+    // Basic get/set
+    function getById( id ) {
+        var key     = "product_#id#"
+        var product = cache.get( key )
+
+        if( !isNull( product ) ){
+            return product
+        }
+
+        product = queryDB( id )
+        cache.set( key, product, 120, 60 )
+        return product
+    }
+
+    // Check and get (atomic)
+    function getWithCheck( id ) {
+        var key = "product_#id#"
+
+        if( cache.lookup( key ) ){
+            return cache.get( key )
+        }
+
+        var product = queryDB( id )
+        cache.set( key, product )
+        return product
+    }
+
+    // Get or set (cache-or-compute)
+    function getOrCompute( id ) {
+        return cache.getOrSet(
+            objectKey  = "product_#id#",
+            produce    = () => queryDB( id ),
+            timeout    = 120,
+            lastAccess = 30
+        )
+    }
+
+    // Eviction
+    function invalidate( id ) {
+        cache.clear( "product_#id#" )
+    }
+
+    // Clear by prefix pattern
+    function invalidateAll() {
+        cache.clearByKeySnippet( "product_" )
+    }
+
+    // Cache statistics
+    function getStats() {
+        return cache.getStats()
+    }
+
+    // Warm the cache
+    function warmCache() {
+        var products = queryAllFromDB()
+        products.each( ( p ) => {
+            cache.set( "product_#p.id#", p, 240 )
+        } )
+    }
+}
+```
 
 ## Advanced Cache Patterns
 
@@ -224,6 +294,27 @@ class CacheConsumer {
 
     @inject( "cachebox" )
     property name="cacheBox";
+
+    function getCacheByName( name ) {
+        return cacheBox.getCache( name )
+    }
+}
+```
+**CFML (`.cfc`):**
+
+```cfml
+// Inject different caches based on use case
+component CacheConsumer {
+
+        property name="defaultCache" inject="cachebox:default";
+
+        property name="templateCache" inject="cachebox:template";
+
+        property name="productCache" inject="cachebox:products";
+
+        property name="redisCache" inject="cachebox:redis";
+
+        property name="cacheBox" inject="cachebox";
 
     function getCacheByName( name ) {
         return cacheBox.getCache( name )

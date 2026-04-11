@@ -224,12 +224,79 @@ user.save()
 
 var users = getInstance( "User" ).findActive()
 ```
+**CFML (`.cfc`):**
+
+```cfml
+/**
+ * models/User.cfc — entity + service combined
+ */
+component extends="cborm.models.ActiveEntity" {
+
+    property name="id"        column="id"        fieldtype="id" generator="uuid"
+    property name="firstName" column="first_name"
+    property name="lastName"  column="last_name"
+    property name="email"     column="email"      unique="true"
+    property name="active"    column="is_active"  ormtype="boolean"
+    property name="createdAt" column="created_at" ormtype="timestamp"
+
+    /**
+     * Find active users — instance method on active entity
+     */
+    function findActive() {
+        return newCriteria()
+            .eq( "active", true )
+            .list( sortOrder: "lastName" )
+    }
+
+    /**
+     * Custom validation
+     */
+    function validate() {
+        return validateOrFail()
+    }
+}
+
+// Usage in handler
+var user = getInstance( "User" )
+user.setFirstName( "John" )
+user.setEmail( "john@example.com" )
+user.save()
+
+var users = getInstance( "User" ).findActive()
+```
 
 ## Virtual Entity Service
 
 ```boxlang
 // Inject and use without creating a dedicated service class
 class {
+
+    property name="ormService" inject="VirtualEntityService@cborm"
+
+    function getUsers() {
+        return ormService
+            .newCriteria( "User" )
+            .eq( "active", true )
+            .list()
+    }
+
+    function saveUser( user ) {
+        return ormService.save( "User", user )
+    }
+
+    function deleteUser( id ) {
+        ormService.deleteByID( "User", id )
+    }
+
+    function countUsers() {
+        return ormService.count( "User" )
+    }
+}
+```
+**CFML (`.cfc`):**
+
+```cfml
+// Inject and use without creating a dedicated service component component {
 
     property name="ormService" inject="VirtualEntityService@cborm"
 
@@ -286,11 +353,80 @@ class {
     }
 }
 ```
+**CFML (`.cfc`):**
+
+```cfml
+/**
+ * models/UserEventHandler.cfc — listen to ORM lifecycle events
+ */
+component {
+
+    function preInsert( entity ) {
+        entity.setCreatedAt( now() )
+    }
+
+    function preUpdate( entity ) {
+        entity.setUpdatedAt( now() )
+    }
+
+    function preDelete( entity ) {
+        // Prevent deletion if user has orders
+        var orderCount = queryExecute(
+            "SELECT COUNT(*) as cnt FROM orders WHERE user_id = :id",
+            { id: entity.getID() }
+        ).cnt
+        if ( orderCount > 0 ) {
+            throw( "Cannot delete user with existing orders" )
+        }
+    }
+
+    function postInsert( entity ) {
+        // Send welcome email
+    }
+}
+```
 
 ## Transaction Management
 
 ```boxlang
 class singleton {
+
+    // Declare method as transactional
+    /**
+     * @transaction
+     */
+    function transferFunds( fromID, toID, amount ) {
+        var from = get( fromID )
+        var to   = get( toID )
+
+        from.setBalance( from.getBalance() - amount )
+        to.setBalance( to.getBalance() + amount )
+
+        save( from )
+        save( to )
+    }
+
+    // OR use transaction block
+    function processOrder( orderID ) {
+        transaction {
+            try {
+                var order = orderService.get( orderID )
+                inventoryService.deduct( order )
+                order.markComplete()
+                orderService.save( order )
+                transaction action="commit"
+            } catch ( any e ) {
+                transaction action="rollback"
+                rethrow
+            }
+        }
+    }
+}
+```
+**CFML (`.cfc`):**
+
+```cfml
+component singleton {
 
     // Declare method as transactional
     /**

@@ -90,8 +90,64 @@ class ProductService {
     }
 }
 ```
+**CFML (`.cfc`):**
 
-## CacheBox Configuration (BoxLang)
+```cfml
+component ProductService {
+
+    // Inject the default cache
+        property name="cache" inject="cachebox:default";
+
+    // Inject a named cache
+        property name="productCache" inject="cachebox:products";
+
+    // Inject CacheBox itself
+        property name="cacheBox" inject="cachebox";
+
+    function getById( id ) {
+        var cacheKey = "product_#id#"
+
+        // Try cache first
+        var product = cache.get( cacheKey )
+        if( !isNull( product ) ){
+            return product
+        }
+
+        // Load from DB
+        product = productRepository.findById( id )
+
+        // Store in cache (timeout=60 min, lastAccess=30 min)
+        cache.set( cacheKey, product, 60, 30 )
+
+        return product
+    }
+
+    function list( page = 1, limit = 25 ) {
+        var cacheKey = "products_list_#page#_#limit#"
+
+        var results = cache.get( cacheKey )
+        if( !isNull( results ) ){
+            return results
+        }
+
+        results = productRepository.list( page = page, limit = limit )
+        cache.set( cacheKey, results, 30, 15 )
+        return results
+    }
+
+    function clearProductCache( id ) {
+        cache.clear( "product_#id#" )
+        // Clear all list caches
+        cache.clearByKeySnippet( "products_list_" )
+    }
+
+    function clearAll() {
+        cache.clearAll()
+    }
+}
+```
+
+## CacheBox Configuration
 
 ```boxlang
 // config/CacheBox.cfc
@@ -130,7 +186,7 @@ class CacheBox extends coldbox.system.cache.config.CacheBoxConfig {
 }
 ```
 
-## Redis Cache Provider (BoxLang)
+## Redis Cache Provider
 
 ```boxlang
 // config/CacheBox.cfc — Redis configuration
@@ -235,6 +291,28 @@ function getTopProducts() {
 ```boxlang
 // With cborm/Quick ORM entities
 class ProductService {
+
+    @cacheable( timeout = 60, provider = "default" )
+    function getById( id ) {
+        return productRepository.findById( id )
+    }
+
+    @cacheable( timeout = 30, key = "products_list_#arguments.page#" )
+    function list( page = 1 ) {
+        return productRepository.list( page = page )
+    }
+
+    @cacheEvict( pattern = "products_" )
+    function save( product ) {
+        return productRepository.save( product )
+    }
+}
+```
+**CFML (`.cfc`):**
+
+```cfml
+// With cborm/Quick ORM entities
+component ProductService {
 
     @cacheable( timeout = 60, provider = "default" )
     function getById( id ) {

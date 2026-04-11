@@ -137,6 +137,81 @@ class extends="coldbox.system.EventHandler" {
     }
 }
 ```
+**CFML (`.cfc`):**
+
+```cfml
+/**
+ * handlers/SSO.cfc
+ */
+component extends="coldbox.system.EventHandler" {
+
+    property name="ssoService"  inject="SSOService"    // cbsso
+    property name="authService" inject="AuthService"
+    property name="userService" inject="UserService"
+    property name="cbauth"      inject="@cbauth"
+
+    /**
+     * Redirect user to provider's login page.
+     * GET /sso/login/:provider
+     */
+    function login( event, rc, prc ) {
+        var provider = rc.provider ?: "google"
+        var authURL  = ssoService.buildAuthorizationURL( provider )
+        relocate( authURL )
+    }
+
+    /**
+     * OAuth2 callback — exchange code, load/create user, log them in.
+     * GET /sso/callback/:provider
+     */
+    function callback( event, rc, prc ) {
+        var provider = rc.provider ?: "google"
+
+        // Exchange authorization code for tokens + identity
+        try {
+            var identity = ssoService.exchangeCode(
+                provider = provider,
+                code     = rc.code,
+                state    = rc.state ?: ""
+            )
+        } catch ( any e ) {
+            flash.put( "error", "SSO authentication failed: " & e.message )
+            return relocate( "auth.login" )
+        }
+
+        // Find or create local user
+        var user = userService.findByEmail( identity.email )
+
+        if ( isNull( user ) ) {
+            user = userService.createFromSSO( {
+                email:    identity.email,
+                name:     identity.name,
+                avatar:   identity.picture ?: "",
+                provider: provider,
+                sub:      identity.sub       // external user ID
+            } )
+        } else {
+            // Update SSO metadata
+            userService.updateSSOMetadata( user.getID(), provider, identity.sub )
+        }
+
+        // Log in via cbauth
+        cbauth.login( user )
+
+        flash.put( "success", "Welcome, " & user.getName() & "!" )
+        relocate( "dashboard" )
+    }
+
+    /**
+     * SSO logout — local + optional provider logout.
+     * GET /sso/logout
+     */
+    function logout( event, rc, prc ) {
+        cbauth.logout()
+        relocate( "auth.login" )
+    }
+}
+```
 
 ## User Service SSO Methods
 
