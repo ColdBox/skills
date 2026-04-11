@@ -9,6 +9,19 @@ description: "Use this skill when implementing authorization in ColdBox with CBS
 
 Authorization in ColdBox is handled by CBSecurity through security rules, role checks, permission checks, and handler-level annotations. It determines what authenticated users can access.
 
+## Language Mode Reference
+
+Examples use **BoxLang (`.bx`)** syntax by default. Adapt for your target language:
+
+| Concept | BoxLang (`.bx`) | CFML (`.cfc`) |
+|---------|-----------------|---------------|
+| Class declaration | `class [extends="..."] {` | `component [extends="..."] {` |
+| DI annotation | `@inject` above `property name="svc";` | `property name="svc" inject="svc";` |
+| View templates | `.bxm` suffix | `.cfm` / `.cfml` suffix |
+| Tag prefix | `<bx:if>`, `<bx:output>`, `<bx:set>` | `<cfif>`, `<cfoutput>`, `<cfset>` |
+
+> **CFML Compat Mode**: With BoxLang + CFML Compat module, `.bx` and `.cfc` files coexist freely. BoxLang-native classes use `class {}` (`.bx` files); CFML-compat classes use `component {}` (`.cfc` files).
+
 ## CBSecurity Rules
 
 ### Event-Based Rules

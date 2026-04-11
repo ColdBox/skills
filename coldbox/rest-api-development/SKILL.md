@@ -9,6 +9,19 @@ description: Use this skill when building RESTful APIs in ColdBox using RestHand
 
 Use this skill when building REST APIs with ColdBox, including API routing, handlers, authentication, versioning, and response formatting.
 
+## Language Mode Reference
+
+Examples use **BoxLang (`.bx`)** syntax by default. Adapt for your target language:
+
+| Concept | BoxLang (`.bx`) | CFML (`.cfc`) |
+|---------|-----------------|---------------|
+| Class declaration | `class [extends="..."] {` | `component [extends="..."] {` |
+| DI annotation | `@inject` above `property name="svc";` | `property name="svc" inject="svc";` |
+| View templates | `.bxm` suffix | `.cfm` / `.cfml` suffix |
+| Tag prefix | `<bx:if>`, `<bx:output>`, `<bx:set>` | `<cfif>`, `<cfoutput>`, `<cfset>` |
+
+> **CFML Compat Mode**: With BoxLang + CFML Compat module, `.bx` and `.cfc` files coexist freely. BoxLang-native classes use `class {}` (`.bx` files); CFML-compat classes use `component {}` (`.cfc` files).
+
 ## Core Concepts
 
 ColdBox REST APIs use:

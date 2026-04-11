@@ -9,6 +9,19 @@ description: "Use this skill when using Quick ORM in ColdBox, defining Active Re
 
 Quick is a modern, fluent Active Record ORM for CFML/BoxLang. It provides an expressive syntax for database operations, relationships, and query building — similar to Laravel Eloquent.
 
+## Language Mode Reference
+
+Examples use **BoxLang (`.bx`)** syntax by default. Adapt for your target language:
+
+| Concept | BoxLang (`.bx`) | CFML (`.cfc`) |
+|---------|-----------------|---------------|
+| Class declaration | `class [extends="..."] {` | `component [extends="..."] {` |
+| DI annotation | `@inject` above `property name="svc";` | `property name="svc" inject="svc";` |
+| View templates | `.bxm` suffix | `.cfm` / `.cfml` suffix |
+| Tag prefix | `<bx:if>`, `<bx:output>`, `<bx:set>` | `<cfif>`, `<cfoutput>`, `<cfset>` |
+
+> **CFML Compat Mode**: With BoxLang + CFML Compat module, `.bx` and `.cfc` files coexist freely. BoxLang-native classes use `class {}` (`.bx` files); CFML-compat classes use `component {}` (`.cfc` files).
+
 ## Installation & Configuration
 
 ```bash

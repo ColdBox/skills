@@ -9,6 +9,19 @@ description: Use this skill when implementing caching in ColdBox applications us
 
 Use this skill when adding caching strategies to a ColdBox application using CacheBox — the built-in caching framework.
 
+## Language Mode Reference
+
+Examples use **BoxLang (`.bx`)** syntax by default. Adapt for your target language:
+
+| Concept | BoxLang (`.bx`) | CFML (`.cfc`) |
+|---------|-----------------|---------------|
+| Class declaration | `class [extends="..."] {` | `component [extends="..."] {` |
+| DI annotation | `@inject` above `property name="svc";` | `property name="svc" inject="svc";` |
+| View templates | `.bxm` suffix | `.cfm` / `.cfml` suffix |
+| Tag prefix | `<bx:if>`, `<bx:output>`, `<bx:set>` | `<cfif>`, `<cfoutput>`, `<cfset>` |
+
+> **CFML Compat Mode**: With BoxLang + CFML Compat module, `.bx` and `.cfc` files coexist freely. BoxLang-native classes use `class {}` (`.bx` files); CFML-compat classes use `component {}` (`.cfc` files).
+
 ## Core Concepts
 
 ColdBox uses **CacheBox** for all caching, which provides:

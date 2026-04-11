@@ -58,6 +58,7 @@ npx skills add ortus-boxlang/coldbox-skills/coldbox
 | [`coldbox-request-context`](./coldbox/coldbox-request-context/SKILL.md) | Request/response lifecycle, flash scope, collection manipulation, request metadata |
 | [`coldbox-flash-messaging`](./coldbox/coldbox-flash-messaging/SKILL.md) | Flash RAM, message types (success/error/info/warning), persistence strategies |
 | [`cache-integration`](./coldbox/cache-integration/SKILL.md) | ColdBox event caching, view caching, handler-level cache control, cache keys |
+| [`coldbox-cli`](./coldbox/coldbox-cli/SKILL.md) | `coldbox create` scaffolding commands, app skeletons, language flags (BoxLang/CFML), feature flags, ORM generation, testing stubs, AI integration |
 
 ### `testing` — TestBox & Spec Writing Skills
 
