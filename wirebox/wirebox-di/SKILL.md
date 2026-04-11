@@ -92,7 +92,7 @@ class OrderService {
 @inject( "coldbox" )                                 // ColdBox controller
 @inject( "coldbox:appMapping" )                      // App mapping
 @inject( "coldbox:setting:key" )                     // ColdBox setting
-@inject( "coldbox:setting:key@moduleName" )          // Module setting  
+@inject( "coldbox:setting:key@moduleName" )          // Module setting
 @inject( "coldbox:moduleSettings:myModule" )         // All module settings
 @inject( "coldbox:flash" )                           // Flash RAM
 @inject( "coldbox:requestContext" )                  // Event object
