@@ -170,6 +170,50 @@ class Users extends coldbox.system.EventHandler {
 }
 ```
 
+**CFML (`.cfc`):**
+
+```cfml
+component extends="coldbox.system.EventHandler" {
+
+    @inject
+    property name="MessageBox@cbmessagebox";
+
+    function store( event, rc, prc ) {
+        var result = userService.create( rc )
+
+        if( result.hasErrors() ){
+            // Store error with list formatting
+            MessageBox.error(
+                messageArray = result.getErrors()
+            )
+            flash.put( "formData", rc )
+            relocate( "users.create" )
+            return
+        }
+
+        MessageBox.success( "User '#rc.name#' created successfully!" )
+        relocate( "users.index" )
+    }
+
+    function update( event, rc, prc ) {
+        var result = userService.update( rc.id, rc )
+        if( result.hasErrors() ){
+            MessageBox.warning( "Some fields need your attention" )
+            relocate( "users.edit", { id: rc.id } )
+            return
+        }
+        MessageBox.success( "User updated!" )
+        relocate( "users.show", { id: rc.id } )
+    }
+
+    function delete( event, rc, prc ) {
+        userService.delete( rc.id )
+        MessageBox.info( "User removed from the system" )
+        relocate( "users.index" )
+    }
+}
+```
+
 ### CBMessageBox Types
 
 ```boxlang
@@ -259,13 +303,14 @@ class Posts extends coldbox.system.EventHandler {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
 // Full PRG workflow example
-class Posts extends coldbox.system.EventHandler {
+component extends="coldbox.system.EventHandler" {
 
-        property name="postService" inject="postService";
+    property name="postService" inject="postService";
 
     @inject
     property name="MessageBox@cbmessagebox";

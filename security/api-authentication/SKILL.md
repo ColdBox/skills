@@ -149,13 +149,14 @@ class singleton {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
 /**
  * models/APIKeyService.cfc
  */
-component singleton {
+component {
 
     property name="cacheBox" inject="cachebox"
 
@@ -308,6 +309,7 @@ class {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
@@ -385,6 +387,7 @@ class extends="coldbox.system.RestHandler" {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml

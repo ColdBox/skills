@@ -142,13 +142,14 @@ class singleton {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
 /**
  * models/JWTService.cfc
  */
-component singleton {
+component {
 
     property name="jwtService"  inject="JWTService@cbsecurity"
     property name="userService" inject="UserService"
@@ -253,6 +254,7 @@ class extends="coldbox.system.RestHandler" {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
@@ -337,6 +339,7 @@ class extends="coldbox.system.RestHandler" {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml

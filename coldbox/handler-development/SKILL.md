@@ -129,14 +129,15 @@ class extends="coldbox.system.EventHandler" {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
 component extends="coldbox.system.EventHandler" {
 
-        property name="userService" inject="userService";
+    property name="userService" inject="userService";
 
-        property name="validationManager" inject="validationManager";
+    property name="validationManager" inject="validationManager";
 
     /**
      * Display list of users
@@ -265,12 +266,13 @@ class api_Users extends coldbox.system.RestHandler {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
-class api_Users extends coldbox.system.RestHandler {
+component extends="coldbox.system.RestHandler" {
 
-        property name="userService" inject="userService";
+    property name="userService" inject="userService";
 
     function index( event, rc, prc ) {
         var users = userService.list(
@@ -350,6 +352,42 @@ class Products extends coldbox.system.EventHandler {
 }
 ```
 
+**CFML (`.cfc`):**
+
+```cfml
+component extends="coldbox.system.EventHandler" {
+
+    // Run before ALL actions
+    this.preHandler = "setupDefaults"
+
+    // Run after ALL actions
+    this.postHandler = "logActivity"
+
+    // Run around specific actions
+    this.aroundHandler = "measurePerformance"
+
+    private function setupDefaults( event, rc, prc, action ) {
+        prc.currentUser = auth().user()
+        prc.pageTitle = "Products"
+    }
+
+    private function logActivity( event, rc, prc, action ) {
+        log.info( "Action completed: #action#" )
+    }
+
+    private function measurePerformance( event, rc, prc, targetAction, args ) {
+        var start = getTickCount()
+        targetAction( argumentCollection = args )
+        log.debug( "Action #args.action# took #getTickCount() - start#ms" )
+    }
+
+    function index( event, rc, prc ) {
+        prc.products = productService.list()
+        event.setView( "products/index" )
+    }
+}
+```
+
 ## Secured Handler
 
 ```boxlang
@@ -387,15 +425,16 @@ class Admin extends coldbox.system.EventHandler {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
-class Admin extends coldbox.system.EventHandler {
+component extends="coldbox.system.EventHandler" {
 
     // Secure entire handler - requires authentication
     this.preHandler = "checkAuth"
 
-        property name="userService" inject="userService";
+    property name="userService" inject="userService";
 
     private function checkAuth( event, rc, prc, action ) {
         if( !auth().check() ){
@@ -414,7 +453,7 @@ class Admin extends coldbox.system.EventHandler {
     }
 
     // Using security annotations (requires CBSecurity)
-    // @secured (use cbsecurity annotation: secured="true")
+    @secured
     @permissions( "admin.users.delete" )
     function delete( event, rc, prc ) {
         userService.delete( rc.id ?: 0 )

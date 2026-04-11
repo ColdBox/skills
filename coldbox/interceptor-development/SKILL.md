@@ -76,12 +76,13 @@ class LoggingInterceptor extends coldbox.system.Interceptor {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
-class LoggingInterceptor extends coldbox.system.Interceptor {
+component extends="coldbox.system.Interceptor" {
 
-        property name="logService" inject="logService";
+    property name="logService" inject="logService";
 
     function configure() {
         // Called on startup — initialize settings
@@ -143,12 +144,13 @@ class SecurityInterceptor extends coldbox.system.Interceptor {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
-class SecurityInterceptor extends coldbox.system.Interceptor {
+component extends="coldbox.system.Interceptor" {
 
-        property name="authService" inject="authService";
+    property name="authService" inject="authService";
 
     property name="securedRoutes" type="array";
 
@@ -219,10 +221,96 @@ class CORSInterceptor extends coldbox.system.Interceptor {
 }
 ```
 
+**CFML (`.cfc`):**
+
+```cfml
+component extends="coldbox.system.Interceptor" {
+
+    property name="allowedOrigins" type="array";
+    property name="allowedMethods" type="string";
+    property name="allowedHeaders" type="string";
+
+    function configure() {
+        allowedOrigins = [ "https://app.example.com", "https://admin.example.com" ]
+        allowedMethods = "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+        allowedHeaders = "Content-Type,Authorization,X-Requested-With"
+    }
+
+    function preProcess( event, rc, prc, interceptData ) {
+        var origin = event.getHTTPHeader( "Origin", "" )
+
+        // Allow if matching enabled origin
+        if( allowedOrigins.contains( origin ) ){
+            event.setHTTPHeader( "Access-Control-Allow-Origin", origin )
+            event.setHTTPHeader( "Access-Control-Allow-Credentials", "true" )
+        }
+
+        event.setHTTPHeader( "Access-Control-Allow-Methods", allowedMethods )
+        event.setHTTPHeader( "Access-Control-Allow-Headers", allowedHeaders )
+        event.setHTTPHeader( "Access-Control-Max-Age", "86400" )
+
+        // Handle preflight OPTIONS request
+        if( event.getHTTPMethod() == "OPTIONS" ){
+            event.renderData( data = "", statusCode = 204 )
+            event.noRender( false )
+        }
+    }
+}
+```
+
 ## Rate Limiting Interceptor
 
 ```boxlang
 class RateLimitInterceptor extends coldbox.system.Interceptor {
+
+    @inject
+    property name="cachebox:default" inject="cachebox:default" name="cacheProvider";
+
+    property name="requestsPerMinute" default="60";
+
+    function configure() {
+        requestsPerMinute = getSetting( "rateLimitPerMinute", 60 )
+    }
+
+    function preProcess( event, rc, prc, interceptData ) {
+        var clientIP  = event.getClientIP()
+        var cacheKey  = "ratelimit_#clientIP#"
+        var cacheData = cacheProvider.get( cacheKey )
+
+        if( isNull( cacheData ) ){
+            cacheProvider.set( cacheKey, { count: 1, resetAt: dateAdd( "n", 1, now() ) }, 2, 2 )
+            return
+        }
+
+        if( cacheData.count >= requestsPerMinute ){
+            event.renderData(
+                data = {
+                    "error"      : "Too many requests",
+                    "retryAfter" : dateDiff( "s", now(), cacheData.resetAt )
+                },
+                statusCode = 429,
+                headers    = {
+                    "X-RateLimit-Limit"     : requestsPerMinute,
+                    "X-RateLimit-Remaining" : 0,
+                    "Retry-After"           : dateDiff( "s", now(), cacheData.resetAt )
+                }
+            )
+            return
+        }
+
+        cacheData.count++
+        cacheProvider.set( cacheKey, cacheData, 2, 2 )
+
+        event.setHTTPHeader( "X-RateLimit-Limit", requestsPerMinute )
+        event.setHTTPHeader( "X-RateLimit-Remaining", requestsPerMinute - cacheData.count )
+    }
+}
+```
+
+**CFML (`.cfc`):**
+
+```cfml
+component extends="coldbox.system.Interceptor" {
 
     @inject
     property name="cachebox:default" inject="cachebox:default" name="cacheProvider";
@@ -317,11 +405,12 @@ class UserEventInterceptor extends coldbox.system.Interceptor {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
 // Declare custom interception point in ColdBox.cfc
-class ColdBox extends coldbox.system.Coldbox {
+component extends="coldbox.system.Coldbox" {
 
     function configure() {
         coldbox = {
@@ -336,9 +425,9 @@ class ColdBox extends coldbox.system.Coldbox {
 }
 
 // Fire custom interception point from service
-component UserService {
+component {
 
-        property name="interceptorService" inject="interceptorService";
+    property name="interceptorService" inject="interceptorService";
 
     function create( data ) {
         var user = userRepository.create( data )
@@ -354,9 +443,9 @@ component UserService {
 }
 
 // Listen to custom interception point in interceptor
-class UserEventInterceptor extends coldbox.system.Interceptor {
+component extends="coldbox.system.Interceptor" {
 
-        property name="emailService" inject="emailService";
+    property name="emailService" inject="emailService";
 
     function onUserCreated( event, rc, prc, interceptData ) {
         var user = interceptData.user
@@ -405,11 +494,12 @@ class ModuleConfig {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
 // In ColdBox.cfc
-class ColdBox extends coldbox.system.Coldbox {
+component extends="coldbox.system.Coldbox" {
 
     function configure() {
         // Register interceptors
@@ -433,7 +523,7 @@ class ColdBox extends coldbox.system.Coldbox {
 }
 
 // In module ModuleConfig.cfc
-component ModuleConfig {
+component {
 
     function configure() {
         interceptors = [
@@ -468,15 +558,16 @@ class AsyncEmailInterceptor extends coldbox.system.Interceptor {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
-class AsyncEmailInterceptor extends coldbox.system.Interceptor {
+component extends="coldbox.system.Interceptor" {
 
     // Run all listeners asynchronously
     property name="asyncAll" default="true";
 
-        property name="emailService" inject="emailService";
+    property name="emailService" inject="emailService";
 
     function onUserCreated( event, rc, prc, interceptData ) {
         // Runs in a separate thread

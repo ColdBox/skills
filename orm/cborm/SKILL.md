@@ -224,6 +224,7 @@ user.save()
 
 var users = getInstance( "User" ).findActive()
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
@@ -293,10 +294,11 @@ class {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
-// Inject and use without creating a dedicated service component component {
+// Inject and use without creating a dedicated service component {
 
     property name="ormService" inject="VirtualEntityService@cborm"
 
@@ -353,6 +355,7 @@ class {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
@@ -423,10 +426,11 @@ class singleton {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
-component singleton {
+component {
 
     // Declare method as transactional
     /**

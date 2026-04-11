@@ -71,6 +71,37 @@ class Router extends coldbox.system.web.routing.Router {
 }
 ```
 
+**CFML (`.cfc`):**
+
+```cfml
+component extends="coldbox.system.web.routing.Router" {
+
+    function configure() {
+
+        // Set base URL and options
+        setFullRewrites( true )
+
+        // Simple home route
+        route( "/", "main.index" )
+
+        // Named route
+        route( name = "about", pattern = "/about", target = "pages.about" )
+
+        // RESTful resource (generates CRUD routes)
+        resources( "users" )
+
+        // Nested resources
+        resources(
+            resource  = "posts",
+            nested    = "comments"
+        )
+
+        // Wildcard route - MUST be last
+        route( "/:handler/:action?" )
+    }
+}
+```
+
 ## RESTful Resource Routes
 
 `resources( "users" )` generates these routes:
@@ -199,6 +230,45 @@ class Router extends coldbox.system.web.routing.Router {
 
 // modules/api/config/Router.cfc
 class Router extends coldbox.system.web.routing.Router {
+
+    function configure() {
+        // V1 routes
+        group( pattern = "/v1" ) {
+            resources( "users" )
+            resources( "posts" )
+        }
+
+        // V2 routes
+        group(
+            pattern   = "/v2",
+            namespace = "v2"
+        ) {
+            resources( "users" )
+        }
+    }
+}
+```
+
+**CFML (`.cfc`):**
+
+```cfml
+// config/Router.cfc
+component extends="coldbox.system.web.routing.Router" {
+
+    function configure() {
+        setFullRewrites( true )
+
+        // Mount API routes from module
+        addRoute( route( "/api/" ).toModuleRoutes( "api" ) )
+
+        // Web routes
+        route( "/", "main.index" )
+        route( "/:handler/:action?" )
+    }
+}
+
+// modules/api/config/Router.cfc
+component extends="coldbox.system.web.routing.Router" {
 
     function configure() {
         // V1 routes

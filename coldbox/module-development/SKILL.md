@@ -121,10 +121,11 @@ class ModuleConfig {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
-component ModuleConfig {
+component {
 
     // ======================================================
     // Module Properties
@@ -215,6 +216,33 @@ class Router extends coldbox.system.web.routing.Router {
 }
 ```
 
+**CFML (`.cfc`):**
+
+```cfml
+// modules_app/myModule/config/Router.cfc
+component extends="coldbox.system.web.routing.Router" {
+
+    function configure() {
+
+        // All routes here are prefixed with entryPoint
+        // e.g., /mymodule/...
+        route( "/", "dashboard.index" )
+        route( "/dashboard", "dashboard.index" )
+
+        // Resource routes
+        resources( "widgets" )
+
+        // API routes
+        group( pattern = "/api" ) {
+            resources( "items" )
+        }
+
+        // Wildcard fallback
+        route( "/:handler/:action?" )
+    }
+}
+```
+
 ## Module Handler
 
 ```boxlang
@@ -234,12 +262,13 @@ class Dashboard extends coldbox.system.EventHandler {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
-class Dashboard extends coldbox.system.EventHandler {
+component extends="coldbox.system.EventHandler" {
 
-        property name="widgetService" inject="widgetService";
+    property name="widgetService" inject="widgetService";
 
     // Get module settings in handler
     property name="settings" inject="coldbox:moduleSettings:myModule";
@@ -283,15 +312,16 @@ class WidgetService {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
-component WidgetService {
+component {
 
     // Injected module settings
-        property name="settings" inject="coldbox:moduleSettings:myModule";
+    property name="settings" inject="coldbox:moduleSettings:myModule";
 
-        property name="wirebox" inject="wirebox";
+    property name="wirebox" inject="wirebox";
 
     function list() {
         return queryExecute(
@@ -367,11 +397,56 @@ class ModuleInterceptor extends coldbox.system.Interceptor {
 }
 ```
 
+**CFML (`.cfc`):**
+
+```cfml
+// modules_app/myModule/interceptors/ModuleInterceptor.cfc
+component extends="coldbox.system.Interceptor" {
+
+    property name="settings" inject="coldbox:moduleSettings:myModule";
+
+    function configure() {
+        log.info( "MyModule interceptor configured" )
+    }
+
+    function preProcess( event, rc, prc, interceptData ) {
+        if( settings.debug ){
+            log.debug( "Module request: #event.getCurrentEvent()#" )
+        }
+    }
+}
+```
+
 ## Module WireBox Binder
 
 ```boxlang
 // modules_app/myModule/config/WireBox.cfc
 class WireBox extends coldbox.system.ioc.config.Binder {
+
+    function configure() {
+        // Map an interface to an implementation
+        mapPath( "#moduleMapping#.models.WidgetService" )
+            .asSingleton()
+
+        // Map with custom ID
+        map( "widgetRepository" )
+            .to( "#moduleMapping#.models.WidgetRepository" )
+            .asSingleton()
+
+        // Map with constructor args
+        map( "myModuleClient" )
+            .to( "#moduleMapping#.models.APIClient" )
+            .asSingleton()
+            .initWith( apiKey = "@settings.apiKey@" )
+    }
+}
+```
+
+**CFML (`.cfc`):**
+
+```cfml
+// modules_app/myModule/config/WireBox.cfc
+component extends="coldbox.system.ioc.config.Binder" {
 
     function configure() {
         // Map an interface to an implementation

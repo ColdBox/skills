@@ -59,6 +59,7 @@ class extends="quick.models.BaseEntity" {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
@@ -114,6 +115,7 @@ class extends="quick.models.BaseEntity" {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
@@ -326,6 +328,7 @@ getInstance( "User" ).role( "manager" ).get()
 // Combine scopes
 getInstance( "User" ).active().role( "admin" ).orderBy( "name" ).get()
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
@@ -381,6 +384,7 @@ writeOutput( user.getFullName() )  // accessor
 user.setPassword( "secret123" )    // mutator — auto-hashed
 user.save()
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml

@@ -110,6 +110,7 @@ class singleton {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
@@ -117,7 +118,7 @@ class singleton {
  * models/PasskeyStorageService.cfc
  * Implements the IPasskeyStorage interface from cbsecurity-passkeys.
  */
-component singleton {
+component {
 
     // Store a newly registered passkey credential
     function storeCredential( required struct credential ) {
@@ -285,6 +286,7 @@ class extends="coldbox.system.EventHandler" {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml

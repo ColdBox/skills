@@ -108,13 +108,14 @@ class singleton {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
 /**
  * models/RoleService.cfc
  */
-component singleton {
+component {
 
     function create( required name, description = "", permissions = [] ) {
         var roleID = createUUID()
@@ -204,13 +205,14 @@ class singleton {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
 /**
  * models/UserService.cfc — role assignment methods
  */
-component singleton {
+component {
 
     function assignRole( required userID, required roleID ) {
         queryExecute(
@@ -280,6 +282,7 @@ class {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
@@ -347,6 +350,7 @@ class extends="coldbox.system.EventHandler" {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml

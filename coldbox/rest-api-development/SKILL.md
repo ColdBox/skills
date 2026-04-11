@@ -181,12 +181,13 @@ class Users extends coldbox.system.RestHandler {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
-class Users extends coldbox.system.RestHandler {
+component extends="coldbox.system.RestHandler" {
 
-        property name="userService" inject="userService";
+    property name="userService" inject="userService";
 
     // Runs before every action - great for input validation
     function preHandler( event, rc, prc, action ) {
@@ -350,11 +351,12 @@ class Router extends coldbox.system.web.routing.Router {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
 // modules_app/api/ModuleConfig.cfc
-component ModuleConfig {
+component {
 
     property name="title"       default="API Module";
     property name="description" default="REST API";
@@ -373,7 +375,7 @@ component ModuleConfig {
 }
 
 // modules_app/api/config/Router.cfc
-class Router extends coldbox.system.web.routing.Router {
+component extends="coldbox.system.web.routing.Router" {
 
     function configure() {
         // V1 resource routes
@@ -452,14 +454,15 @@ class Auth extends coldbox.system.RestHandler {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
-class Auth extends coldbox.system.RestHandler {
+component extends="coldbox.system.RestHandler" {
 
-        property name="authService" inject="authService";
+    property name="authService" inject="authService";
 
-        property name="jwtService" inject="jwtService";
+    property name="jwtService" inject="jwtService";
 
     /**
      * POST /api/v1/auth/login
@@ -546,17 +549,18 @@ function preHandler( event, rc, prc, action ) {
     prc.apiVersion = version
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
 // Using modules for versioning
 // modules_app/apiV1/ModuleConfig.cfc
-component ModuleConfig {
+component {
     property name="entryPoint" default="api/v1";
 }
 
 // modules_app/apiV2/ModuleConfig.cfc
-component ModuleConfig {
+component {
     property name="entryPoint" default="api/v2";
 }
 

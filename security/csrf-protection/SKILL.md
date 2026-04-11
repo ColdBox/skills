@@ -121,6 +121,7 @@ class extends="coldbox.system.EventHandler" {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
@@ -216,6 +217,7 @@ class extends="coldbox.system.Interceptor" {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml

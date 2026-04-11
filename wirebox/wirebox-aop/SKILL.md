@@ -64,6 +64,7 @@ class {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
@@ -131,6 +132,7 @@ class {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
@@ -189,6 +191,7 @@ class {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
@@ -253,6 +256,7 @@ class {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
@@ -329,6 +333,7 @@ class singleton {
     function approveOrder( orderID ) { ... }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
@@ -360,7 +365,7 @@ component {
 /**
  * Usage — annotate service methods
  */
-component singleton {
+component {
 
     /**
      * @secured admin
@@ -419,6 +424,7 @@ class singleton {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
@@ -454,7 +460,7 @@ component {
 }
 
 // Usage
-component singleton {
+component {
     /**
      * @transactional true
      */
@@ -512,6 +518,7 @@ class singleton {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
@@ -550,7 +557,7 @@ component {
 }
 
 // Usage
-component singleton {
+component {
     /**
      * @cacheable 60
      */
@@ -607,6 +614,7 @@ class singleton {
     function callExternalAPI() { ... }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
@@ -647,7 +655,7 @@ component {
 }
 
 // Usage
-component singleton {
+component {
     /**
      * @retry 3
      */

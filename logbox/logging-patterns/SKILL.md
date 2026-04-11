@@ -107,6 +107,82 @@ class LogBox extends coldbox.system.logging.config.LogBoxConfig {
 }
 ```
 
+**CFML (`.cfc`):**
+
+```cfml
+// config/LogBox.cfc (standalone) OR inline in ColdBox.cfc
+component extends="coldbox.system.logging.config.LogBoxConfig" {
+
+    function configure() {
+
+        // ----- Appenders -----
+        appenders = {
+            // Console output (great for development + Docker)
+            console : {
+                class    : "coldbox.system.logging.appenders.ConsoleAppender",
+                levelMin : "DEBUG",
+                levelMax : "FATAL"
+            },
+
+            // Flat file appender
+            fileApp : {
+                class    : "coldbox.system.logging.appenders.FileAppender",
+                levelMin : "INFO",
+                levelMax : "FATAL",
+                properties : {
+                    filePath : "#getDirectoryFromPath( getBaseTemplatePath() )#logs",
+                    fileName : "application"
+                }
+            },
+
+            // Rolling file appender
+            rollingApp : {
+                class    : "coldbox.system.logging.appenders.RollingFileAppender",
+                levelMin : "WARN",
+                levelMax : "FATAL",
+                properties : {
+                    filePath        : "#getDirectoryFromPath( getBaseTemplatePath() )#logs",
+                    fileName        : "app",
+                    fileMaxSize     : 5000,
+                    fileMaxArchives : 3
+                }
+            }
+        }
+
+        // ----- Root Logger -----
+        root = {
+            levelMin  : "WARN",
+            levelMax  : "FATAL",
+            appenders : "rollingApp"
+        }
+
+        // ----- Category Loggers -----
+        categories = {
+            // All models
+            "models" : {
+                levelMin  : "DEBUG",
+                levelMax  : "INFO",
+                appenders : "console,fileApp"
+            },
+
+            // Specific service
+            "models.UserService" : {
+                levelMin  : "DEBUG",
+                levelMax  : "DEBUG",
+                appenders : "console"
+            },
+
+            // SQL queries
+            "cborm" : {
+                levelMin  : "DEBUG",
+                levelMax  : "DEBUG",
+                appenders : "console"
+            }
+        }
+    }
+}
+```
+
 ## Logger Injection in Services
 
 ```boxlang
@@ -157,19 +233,20 @@ class UserService {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
-component UserService {
+component {
 
     // Inject a logger for this class category
-        property name="log" inject="logBox:logger:{this}";
+    property name="log" inject="logBox:logger:{this}";
 
     // Inject the root logger
-        property name="rootLog" inject="logBox:root";
+    property name="rootLog" inject="logBox:root";
 
     // Inject a named logger
-        property name="userLog" inject="logbox:logger:models.UserService";
+    property name="userLog" inject="logbox:logger:models.UserService";
 
     function create( data ) {
         log.info( "Creating user: #data.email#" )
@@ -240,12 +317,13 @@ class ExampleService {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
-component ExampleService {
+component {
 
-        property name="log" inject="logBox:logger:{this}";
+    property name="log" inject="logBox:logger:{this}";
 
     function demonstrate() {
         // TRACE — very fine-grained diagnostic info
@@ -321,12 +399,13 @@ class OrderService {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
-component OrderService {
+component {
 
-        property name="log" inject="logBox:logger:{this}";
+    property name="log" inject="logBox:logger:{this}";
 
     function processOrder( order ) {
         // Log with structured extra data (JSON-friendly)

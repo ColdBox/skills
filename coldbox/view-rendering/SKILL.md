@@ -139,13 +139,14 @@ class EmailService {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
 // Inject renderer into service
-component EmailService {
+component {
 
-        property name="renderer" inject="renderer" inject="coldbox:renderer";
+    property name="renderer" inject="renderer" inject="coldbox:renderer";
 
     function getWelcomeEmailHTML( user ) {
         return renderer.renderView(

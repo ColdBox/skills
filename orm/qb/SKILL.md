@@ -252,11 +252,12 @@ class singleton {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
 // Service method using QB
-component singleton {
+component {
     property name="qb" inject="QueryBuilder@qb"
 
     function activeUsers() {

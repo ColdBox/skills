@@ -1,0 +1,9 @@
+{
+  "name": "ortus-agent-skills",
+  "displayName": "Ortus Agent Skills",
+  "version": "1.0.0",
+  "author": "Ortus Solutions",
+  "description": "Production-ready Claude skills for frontend engineering, language expertise, BoxLang development, security, code review, and technical documentation",
+  "repository": "https://github.com/Ortus-Solutions/skills",
+  "pluginManifest": "../.claude-plugin/plugin.json"
+}

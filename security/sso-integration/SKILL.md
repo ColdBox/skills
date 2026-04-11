@@ -137,6 +137,7 @@ class extends="coldbox.system.EventHandler" {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml

@@ -90,19 +90,20 @@ class ProductService {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
-component ProductService {
+component {
 
     // Inject the default cache
-        property name="cache" inject="cachebox:default";
+    property name="cache" inject="cachebox:default";
 
     // Inject a named cache
-        property name="productCache" inject="cachebox:products";
+    property name="productCache" inject="cachebox:products";
 
     // Inject CacheBox itself
-        property name="cacheBox" inject="cachebox";
+    property name="cacheBox" inject="cachebox";
 
     function getById( id ) {
         var cacheKey = "product_#id#"
@@ -186,6 +187,45 @@ class CacheBox extends coldbox.system.cache.config.CacheBoxConfig {
 }
 ```
 
+**CFML (`.cfc`):**
+
+```cfml
+// config/CacheBox.cfc
+component extends="coldbox.system.cache.config.CacheBoxConfig" {
+
+    function configure() {
+        // Default cache configuration
+        defaultCache = {
+            provider            : "coldbox.system.cache.providers.ColdBoxCaffeineProvider",
+            objectDefaultTimeout : 60,
+            objectDefaultLastAccessTimeout : 30,
+            useLastAccessTimeouts : true,
+            reapFrequency       : 2,
+            freeMemoryPercentageThreshold : 0,
+            evictionPolicy      : "LRU",
+            evictCount          : 1,
+            maxObjects          : 200
+        }
+
+        // Template cache for view/event output caching
+        caches = {
+            template : {
+                provider            : "coldbox.system.cache.providers.ColdBoxCaffeineProvider",
+                objectDefaultTimeout : 60,
+                maxObjects          : 500
+            },
+
+            // Session cache (if needed)
+            sessions : {
+                provider            : "coldbox.system.cache.providers.ColdBoxCaffeineProvider",
+                objectDefaultTimeout : 30,
+                maxObjects          : 1000
+            }
+        }
+    }
+}
+```
+
 ## Redis Cache Provider
 
 ```boxlang
@@ -225,10 +265,85 @@ class CacheBox extends coldbox.system.cache.config.CacheBoxConfig {
 }
 ```
 
+**CFML (`.cfc`):**
+
+```cfml
+// config/CacheBox.cfc — Redis configuration
+component extends="coldbox.system.cache.config.CacheBoxConfig" {
+
+    function configure() {
+        defaultCache = {
+            provider : "coldbox.system.cache.providers.ColdBoxCaffeineProvider",
+            objectDefaultTimeout : 60,
+            maxObjects           : 200
+        }
+
+        caches = {
+            // Redis for distributed/persistent caching
+            redis : {
+                provider   : "cbRedis.models.providers.RedisProvider",
+                properties : {
+                    host     : getSystemSetting( "REDIS_HOST", "localhost" ),
+                    port     : getSystemSetting( "REDIS_PORT", 6379 ),
+                    password : getSystemSetting( "REDIS_PASSWORD", "" ),
+                    objectDefaultTimeout : 60
+                }
+            },
+
+            // Use Redis for sessions
+            sessions : {
+                provider   : "cbRedis.models.providers.RedisProvider",
+                properties : {
+                    host     : getSystemSetting( "REDIS_HOST", "localhost" ),
+                    port     : getSystemSetting( "REDIS_PORT", 6379 ),
+                    objectDefaultTimeout : 30
+                }
+            }
+        }
+    }
+}
+```
+
 ## Event/View Output Caching
 
 ```boxlang
 class Catalog extends coldbox.system.EventHandler {
+
+    // Cache entire handler events
+    this.EVENT_CACHE_SUFFIX = "catalog"
+
+    function index( event, rc, prc ) {
+
+        // Cache this event output for 60 minutes
+        event.setEventCacheableEntry(
+            provider   = "template",
+            timeout    = 60,
+            lastAccess = 30
+        )
+
+        prc.categories = categoryService.list()
+        event.setView( "catalog/index" )
+    }
+
+    function show( event, rc, prc ) {
+
+        // Cache per product ID
+        event.setEventCacheableEntry(
+            provider   = "template",
+            timeout    = 120,
+            suffix     = rc.id ?: 0
+        )
+
+        prc.product = productService.getById( rc.id ?: 0 )
+        event.setView( "catalog/show" )
+    }
+}
+```
+
+**CFML (`.cfc`):**
+
+```cfml
+component extends="coldbox.system.EventHandler" {
 
     // Cache entire handler events
     this.EVENT_CACHE_SUFFIX = "catalog"
@@ -308,11 +423,12 @@ class ProductService {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
 // With cborm/Quick ORM entities
-component ProductService {
+component {
 
     @cacheable( timeout = 60, provider = "default" )
     function getById( id ) {

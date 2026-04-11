@@ -237,6 +237,42 @@ class Products extends coldbox.system.EventHandler {
 }
 ```
 
+**CFML (`.cfc`):**
+
+```cfml
+component extends="coldbox.system.EventHandler" {
+
+    // Cache the 'index' action output for 60 minutes
+    this.EVENT_CACHE_SUFFIX = "products"
+
+    function index( event, rc, prc ) {
+
+        // Cache this event's output
+        event.setEventCacheableEntry(
+            provider   = "template",
+            timeout    = 60,
+            lastAccess = 60
+        )
+
+        prc.products = productService.list()
+        event.setView( "products/index" )
+    }
+
+    function show( event, rc, prc ) {
+
+        // Cache per unique ID
+        event.setEventCacheableEntry(
+            provider   = "template",
+            timeout    = 120,
+            suffix     = rc.id ?: 0
+        )
+
+        prc.product = productService.getById( rc.id ?: 0 )
+        event.setView( "products/show" )
+    }
+}
+```
+
 ## The Flash Scope
 
 ```boxlang

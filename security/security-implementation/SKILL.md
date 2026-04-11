@@ -126,13 +126,14 @@ class singleton {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
 /**
  * models/SecurityService.cfc
  */
-component singleton {
+component {
 
     property name="userService"     inject="UserService"
     property name="bcrypt"          inject="@BCrypt"
@@ -212,6 +213,7 @@ class extends="coldbox.system.Interceptor" {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
@@ -284,6 +286,7 @@ class extends="coldbox.system.EventHandler" {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
@@ -350,6 +353,7 @@ class extends="coldbox.system.Interceptor" {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml

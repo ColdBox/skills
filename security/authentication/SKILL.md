@@ -99,6 +99,7 @@ class singleton {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
@@ -106,7 +107,7 @@ class singleton {
  * models/UserService.cfc
  * Must implement three CBAuth-required methods
  */
-component singleton {
+component {
 
     property name="bcrypt" inject="@BCrypt"
 
@@ -224,6 +225,7 @@ class extends="coldbox.system.EventHandler" {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
@@ -345,6 +347,7 @@ class extends="coldbox.system.EventHandler" {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml

@@ -112,11 +112,54 @@ class ColdBox extends coldbox.system.Coldbox {
 }
 ```
 
+**CFML (`.cfc`):**
+
+```cfml
+// config/ColdBox.cfc
+component extends="coldbox.system.Coldbox" {
+    function configure() {
+        layoutSettings = {
+            defaultLayout : "Main",
+            defaultView   : "main/index"
+        }
+    }
+}
+```
+
 ## Switching Layouts per Handler
 
 ```boxlang
 // Admin handler — use admin layout for all actions
 class Admin extends coldbox.system.EventHandler {
+
+    this.preHandler = "setAdminLayout"
+
+    private function setAdminLayout( event, rc, prc, action ) {
+        event.setLayout( "Admin" )
+        prc.section = "admin"
+    }
+
+    function index( event, rc, prc ) {
+        prc.pageTitle = "Dashboard"
+        event.setView( "admin/dashboard" )
+    }
+}
+
+// Per-action layout override
+function preview( event, rc, prc ) {
+    event.setView( view = "report/print", layout = "Print" )
+}
+
+function modal( event, rc, prc ) {
+    event.setView( "users/modal" ).noLayout()
+}
+```
+
+**CFML (`.cfc`):**
+
+```cfml
+// Admin handler — use admin layout for all actions
+component extends="coldbox.system.EventHandler" {
 
     this.preHandler = "setAdminLayout"
 
@@ -243,11 +286,12 @@ class ModuleConfig {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
 // ModuleConfig.cfc — set module default layout
-component ModuleConfig {
+component {
     function configure() {
         layoutSettings = {
             defaultLayout : "Admin"

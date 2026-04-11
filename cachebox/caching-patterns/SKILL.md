@@ -77,6 +77,53 @@ class CacheBox extends coldbox.system.cache.config.CacheBoxConfig {
 }
 ```
 
+**CFML (`.cfc`):**
+
+```cfml
+// config/CacheBox.cfc
+component extends="coldbox.system.cache.config.CacheBoxConfig" {
+
+    function configure() {
+
+        // Default cache (in-memory Caffeine)
+        defaultCache = {
+            provider                       : "coldbox.system.cache.providers.ColdBoxCaffeineProvider",
+            objectDefaultTimeout           : 60,
+            objectDefaultLastAccessTimeout : 30,
+            useLastAccessTimeouts          : true,
+            reapFrequency                  : 2,
+            evictionPolicy                 : "LRU",
+            evictCount                     : 1,
+            maxObjects                     : 200
+        }
+
+        caches = {
+            // Template/view cache
+            template : {
+                provider                       : "coldbox.system.cache.providers.ColdBoxCaffeineProvider",
+                objectDefaultTimeout           : 60,
+                objectDefaultLastAccessTimeout : 30,
+                maxObjects                     : 500
+            },
+
+            // Product catalog cache (longer TTL)
+            products : {
+                provider            : "coldbox.system.cache.providers.ColdBoxCaffeineProvider",
+                objectDefaultTimeout : 240,  // 4 hours
+                maxObjects          : 1000
+            },
+
+            // Session/auth token cache (match session timeout)
+            sessions : {
+                provider            : "coldbox.system.cache.providers.ColdBoxCaffeineProvider",
+                objectDefaultTimeout : 30,
+                maxObjects          : 5000
+            }
+        }
+    }
+}
+```
+
 ## Redis Provider Configuration
 
 ```boxlang
@@ -168,14 +215,15 @@ class ProductService {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
-component ProductService {
+component {
 
-        property name="cache" inject="cachebox:products";
+    property name="cache" inject="cachebox:products";
 
-        property name="cacheBox" inject="cachebox";
+    property name="cacheBox" inject="cachebox";
 
     // Basic get/set
     function getById( id ) {
@@ -300,21 +348,22 @@ class CacheConsumer {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
 // Inject different caches based on use case
-component CacheConsumer {
+component {
 
-        property name="defaultCache" inject="cachebox:default";
+    property name="defaultCache" inject="cachebox:default";
 
-        property name="templateCache" inject="cachebox:template";
+    property name="templateCache" inject="cachebox:template";
 
-        property name="productCache" inject="cachebox:products";
+    property name="productCache" inject="cachebox:products";
 
-        property name="redisCache" inject="cachebox:redis";
+    property name="redisCache" inject="cachebox:redis";
 
-        property name="cacheBox" inject="cachebox";
+    property name="cacheBox" inject="cachebox";
 
     function getCacheByName( name ) {
         return cacheBox.getCache( name )

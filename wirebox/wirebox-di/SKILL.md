@@ -74,33 +74,34 @@ class UserService {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
-component UserService {
+component {
 
     // Inject by type name (auto-discover)
-        property name="userRepository" inject="userRepository";
+    property name="userRepository" inject="userRepository";
 
     // Inject with explicit mapping name
-        property name="userRepo" inject="UserRepository";
+    property name="userRepo" inject="UserRepository";
 
     // Inject a specific interface implementation
-        property name="paymentGateway" inject="IPaymentGateway";
+    property name="paymentGateway" inject="IPaymentGateway";
 
     // Inject a ColdBox-specific object via DSL
-        property name="appName" inject="coldbox:setting:appName";
+    property name="appName" inject="coldbox:setting:appName";
 
-        property name="moduleSettings" inject="coldbox:moduleSettings:myModule";
+    property name="moduleSettings" inject="coldbox:moduleSettings:myModule";
 
-        property name="cache" inject="coldbox:cacheBox:default";
+    property name="cache" inject="coldbox:cacheBox:default";
 
-        property name="logBox" inject="coldbox:logBox";
+    property name="logBox" inject="coldbox:logBox";
 
-        property name="log" inject="logBox:logger:{this}";
+    property name="log" inject="logBox:logger:{this}";
 
     // Inject ColdBox itself
-        property name="controller" inject="coldbox";
+    property name="controller" inject="coldbox";
 
     function init() {
         return this
@@ -126,10 +127,11 @@ class OrderService {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
-component OrderService {
+component {
 
     function init( required OrderRepository orderRepo, required UserService userService ) {
         variables.orderRepo  = arguments.orderRepo
@@ -224,6 +226,49 @@ class WireBox extends coldbox.system.ioc.config.Binder {
 }
 ```
 
+**CFML (`.cfc`):**
+
+```cfml
+// config/WireBox.cfc
+component extends="coldbox.system.ioc.config.Binder" {
+
+    function configure() {
+
+        // Map by class path (auto-singleton)
+        mapPath( "models.UserService" ).asSingleton()
+
+        // Map with explicit ID
+        map( "userService" ).to( "models.UserService" ).asSingleton()
+
+        // Map interface to implementation
+        map( "IPaymentGateway" )
+            .to( "models.StripePaymentGateway" )
+            .asSingleton()
+
+        // Map with constructor arguments
+        map( "apiClient" )
+            .to( "models.APIClient" )
+            .asSingleton()
+            .initWith(
+                apiKey  : getSetting( "apiKey" ),
+                baseURL : getSetting( "apiBaseURL" )
+            )
+
+        // Transient (new instance per injection)
+        map( "OrderForm" ).to( "models.forms.OrderForm" ).asTransient()
+
+        // Factory method
+        map( "dbConnection" )
+            .toFactoryMethod( "models.DBFactory", "createConnection" )
+            .asSingleton()
+
+        // Provider (lazy factory)
+        map( "myComponent" )
+            .toProvider( "models.MyComponentProvider" )
+    }
+}
+```
+
 ## Singleton vs Transient
 
 ```boxlang
@@ -263,12 +308,13 @@ class MyHandler extends coldbox.system.EventHandler {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
-class MyHandler extends coldbox.system.EventHandler {
+component extends="coldbox.system.EventHandler" {
 
-        property name="wirebox" inject="wirebox";
+    property name="wirebox" inject="wirebox";
 
     function createWidget( event, rc, prc ) {
         // Manually get an instance
@@ -304,13 +350,14 @@ class UserService {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
-component UserService {
+component {
 
     // Provider wraps an expensive service in a lazy loader
-        property name="pdfProvider" inject="provider:ExpensivePDFService";
+    property name="pdfProvider" inject="provider:ExpensivePDFService";
 
     function generateReport( user ) {
         if( user.hasPDFAccess() ){

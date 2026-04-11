@@ -116,6 +116,7 @@ class extends="coldbox.system.EventHandler" {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
@@ -183,12 +184,13 @@ class extends="coldbox.system.EventHandler" {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
 /**
  * Secure entire handler (all actions require login)
- * // @secured (use cbsecurity annotation: secured="true")
+ * @secured
  */
 component extends="coldbox.system.EventHandler" {
 
@@ -240,6 +242,7 @@ class extends="coldbox.system.EventHandler" {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
@@ -287,6 +290,7 @@ class {
     }
 }
 ```
+
 **CFML (`.cfc`):**
 
 ```cfml
