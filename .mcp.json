@@ -1,0 +1,124 @@
+{
+  "mcpServers": {
+    "boxlang-docs": {
+      "type": "sse",
+      "url": "https://ai.ortusbooks.com/~gitbook/mcp"
+    },
+    "boxlang-ide-docs": {
+      "type": "sse",
+      "url": "https://boxlang-ide.ortusbooks.com/~gitbook/mcp"
+    },
+    "modern-cfml-docs": {
+      "type": "sse",
+      "url": "https://modern-cfml.ortusbooks.com/~gitbook/mcp"
+    },
+    "coldbox-docs": {
+      "type": "sse",
+      "url": "https://coldbox.ortusbooks.com/~gitbook/mcp"
+    },
+    "commandbox-docs": {
+      "type": "sse",
+      "url": "https://commandbox.ortusbooks.com/~gitbook/mcp"
+    },
+    "testbox-docs": {
+      "type": "sse",
+      "url": "https://testbox.ortusbooks.com/~gitbook/mcp"
+    },
+    "wirebox-docs": {
+      "type": "sse",
+      "url": "https://wirebox.ortusbooks.com/~gitbook/mcp"
+    },
+    "cachebox-docs": {
+      "type": "sse",
+      "url": "https://cachebox.ortusbooks.com/~gitbook/mcp"
+    },
+    "logbox-docs": {
+      "type": "sse",
+      "url": "https://logbox.ortusbooks.com/~gitbook/mcp"
+    },
+    "docbox-docs": {
+      "type": "sse",
+      "url": "https://docbox.ortusbooks.com/~gitbook/mcp"
+    },
+    "bxorm-docs": {
+      "type": "sse",
+      "url": "https://bxorm.ortusbooks.com/~gitbook/mcp"
+    },
+    "cborm-docs": {
+      "type": "sse",
+      "url": "https://coldbox-orm.ortusbooks.com/~gitbook/mcp"
+    },
+    "qb-docs": {
+      "type": "sse",
+      "url": "https://qb.ortusbooks.com/~gitbook/mcp"
+    },
+    "quick-docs": {
+      "type": "sse",
+      "url": "https://quick.ortusbooks.com/~gitbook/mcp"
+    },
+    "cfmigrations-docs": {
+      "type": "sse",
+      "url": "https://cfmigrations.ortusbooks.com/~gitbook/mcp"
+    },
+    "cbsecurity-docs": {
+      "type": "sse",
+      "url": "https://coldbox-security.ortusbooks.com/~gitbook/mcp"
+    },
+    "cbauth-docs": {
+      "type": "sse",
+      "url": "https://cbauth.ortusbooks.com/~gitbook/mcp"
+    },
+    "cbsso-docs": {
+      "type": "sse",
+      "url": "https://cbsso.ortusbooks.com/~gitbook/mcp"
+    },
+    "cbvalidation-docs": {
+      "type": "sse",
+      "url": "https://coldbox-validation.ortusbooks.com/~gitbook/mcp"
+    },
+    "cbi18n-docs": {
+      "type": "sse",
+      "url": "https://coldbox-i18n.ortusbooks.com/~gitbook/mcp"
+    },
+    "cbmailservices-docs": {
+      "type": "sse",
+      "url": "https://coldbox-mailservices.ortusbooks.com/~gitbook/mcp"
+    },
+    "cbdebugger-docs": {
+      "type": "sse",
+      "url": "https://cbdebugger.ortusbooks.com/~gitbook/mcp"
+    },
+    "cbelasticsearch-docs": {
+      "type": "sse",
+      "url": "https://cbelasticsearch.ortusbooks.com/~gitbook/mcp"
+    },
+    "cbfs-docs": {
+      "type": "sse",
+      "url": "https://cbfs.ortusbooks.com/~gitbook/mcp"
+    },
+    "cfconfig-docs": {
+      "type": "sse",
+      "url": "https://cfconfig.ortusbooks.com/~gitbook/mcp"
+    },
+    "cbwire-docs": {
+      "type": "sse",
+      "url": "https://cbwire.ortusbooks.com/~gitbook/mcp"
+    },
+    "cbq-docs": {
+      "type": "sse",
+      "url": "https://cbq.ortusbooks.com/~gitbook/mcp"
+    },
+    "megaphone-docs": {
+      "type": "sse",
+      "url": "https://megaphone.ortusbooks.com/~gitbook/mcp"
+    },
+    "contentbox-docs": {
+      "type": "sse",
+      "url": "https://contentbox.ortusbooks.com/~gitbook/mcp"
+    },
+    "relax-docs": {
+      "type": "sse",
+      "url": "https://coldbox-relax.ortusbooks.com/~gitbook/mcp"
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "name": "coldbox-agent-skills",
+  "version": "1.0.0",
+  "description": "ColdBox skills for Claude Code — handlers, routing, REST APIs, interceptors, testing, security, ORM, WireBox DI, CacheBox, and LogBox",
+  "author": {
+    "name": "Ortus Solutions",
+    "email": "info@ortussolutions.com",
+    "url": "https://www.ortussolutions.com"
+  },
+  "homepage": "https://www.coldbox.org/",
+  "repository": "https://github.com/ortus-boxlang/coldbox-skills",
+  "license": "Apache-2.0",
+  "keywords": ["coldbox", "boxlang", "cfml", "wirebox", "cachebox", "logbox", "testbox", "ortus", "mvc", "rest"],
+  "skills": [
+    "./coldbox/",
+    "./testing/",
+    "./security/",
+    "./orm/",
+    "./wirebox/",
+    "./cachebox/",
+    "./logbox/"
+  ],
+  "mcpServers": "./.mcp.json"
+}
