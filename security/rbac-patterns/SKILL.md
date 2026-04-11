@@ -21,7 +21,7 @@ CREATE TABLE roles (
     created_at  DATETIME
 );
 
--- permissions table  
+-- permissions table
 CREATE TABLE permissions (
     id          VARCHAR(36) PRIMARY KEY,
     name        VARCHAR(100) UNIQUE NOT NULL,  -- e.g. "users.create"
