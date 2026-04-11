@@ -1,9 +1,9 @@
 {
-  "name": "ortus-agent-skills",
-  "displayName": "Ortus Agent Skills",
+  "name": "coldbox-agent-skills",
+  "displayName": "ColdBox Agent Skills",
   "version": "1.0.0",
   "author": "Ortus Solutions",
-  "description": "Production-ready Claude skills for frontend engineering, language expertise, BoxLang development, security, code review, and technical documentation",
+  "description": "Production-ready Claude skills for ColdBox MVC development in BoxLang and CFML — handlers, routing, REST APIs, interceptors, modules, WireBox DI, CacheBox, LogBox, ORM, security, and testing",
   "repository": "https://github.com/Ortus-Solutions/skills",
   "pluginManifest": "../.claude-plugin/plugin.json"
 }
