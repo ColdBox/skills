@@ -1,0 +1,33 @@
+{
+  "name": "coldbox-skills",
+  "owner": {
+    "name": "Ortus Solutions",
+    "email": "info@ortussolutions.com"
+  },
+  "metadata": {
+    "description": "ColdBox skills for Claude Code — handlers, routing, REST APIs, interceptors, testing, security, ORM, WireBox DI, CacheBox, and LogBox",
+    "version": "1.0.0",
+    "pluginRoot": "."
+  },
+  "plugins": [
+    {
+      "name": "coldbox-agent-skills",
+      "source": {
+        "source": "github",
+        "repo": "ortus-boxlang/coldbox-skills"
+      },
+      "description": "ColdBox skills for Claude Code — handlers, routing, REST APIs, interceptors, testing, security, ORM, WireBox DI, CacheBox, and LogBox",
+      "version": "1.0.0",
+      "author": {
+        "name": "Ortus Solutions",
+        "email": "info@ortussolutions.com"
+      },
+      "homepage": "https://www.coldbox.org/",
+      "repository": "https://github.com/ortus-boxlang/coldbox-skills",
+      "license": "Apache-2.0",
+      "keywords": ["coldbox", "boxlang", "cfml", "wirebox", "cachebox", "logbox", "testbox", "ortus", "mvc", "rest"],
+      "category": "productivity",
+      "tags": ["coldbox", "boxlang", "cfml", "mvc", "rest-api", "testing", "orm", "dependency-injection"]
+    }
+  ]
+}

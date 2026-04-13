@@ -18,7 +18,9 @@
     "./orm/",
     "./wirebox/",
     "./cachebox/",
-    "./logbox/"
+    "./logbox/",
+    "./modules/",
+    "./docbox/"
   ],
   "mcpServers": "./.mcp.json"
 }
