@@ -257,42 +257,66 @@ component extends="testbox.system.BaseSpec" {
 
 ## Using cbMockData for Realistic Fake Data
 
+> For the full cbMockData type reference, see the `testbox-cbmockdata` skill.
+
+**WireBox ID**: `MockData@cbMockData`
+
+cbMockData is bundled with TestBox — no separate install required.
+
 ```boxlang
-/**
- * Using cbMockData module for realistic test data
- * Install: box install cbMockData
- */
 component extends="testbox.system.BaseSpec" {
 
-    property name="mockData" inject="MockData@cbmockdata"
+    property name="mockData" inject="MockData@cbMockData"
 
     function run() {
         describe( "With cbMockData", () => {
 
-            it( "should generate realistic user", () => {
-                userData = mockData.mock( {
-                    name:  "name",
-                    email: "email",
-                    age:   "num:18:80",
-                    bio:   "lorem:2"
-                } )
+            it( "should generate a realistic user", () => {
+                var userData = mockData.mock(
+                    $returnType: "struct",
+                    firstName:   "fname",
+                    lastName:    "lname",
+                    email:       "email",
+                    age:         "age",
+                    bio:         "sentence"
+                )
 
-                expect( userData.name ).toBeString()
-                expect( userData.email ).toMatch( "@" )
+                expect( userData.firstName ).toBeString()
+                expect( userData.email ).toMatch( ".+@.+" )
                 expect( userData.age ).toBeNumeric()
             } )
 
-            it( "should generate collection of users", () => {
-                users = mockData.mock(
-                    $num = 10,
-                    name: "name",
-                    email: "email",
+            it( "should generate a collection of users", () => {
+                var users = mockData.mock(
+                    $num:   10,
+                    id:     "autoincrement",
+                    name:   "name",
+                    email:  "email",
                     status: "oneof:active:inactive:pending"
                 )
 
                 expect( users ).toHaveLength( 10 )
-                expect( [ "active", "inactive", "pending" ] ).toInclude( users[1].status )
+                expect( [ "active", "inactive", "pending" ] ).toInclude( users[ 1 ].status )
             } )
+
+            it( "should generate nested objects", () => {
+                var order = mockData.mock(
+                    $returnType: "struct",
+                    id:          "autoincrement",
+                    customerId:  "uuid",
+                    total:       "rnd:50:500",
+                    items: {
+                        $num:  "rnd:1:5",
+                        sku:   "uuid",
+                        name:  "words",
+                        price: "rnd:5:100"
+                    }
+                )
+
+                expect( order ).toHaveKey( "items" )
+                expect( order.items ).toBeArray()
+            } )
+
         } )
     }
 }

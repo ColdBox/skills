@@ -1,252 +1,312 @@
 ---
-name: coldbox-testing-mocking
-description: "Use this skill when using MockBox to create mocks and stubs in ColdBox tests, stubbing method return values with .$(), verifying method call counts with $once()/$never()/$times(), creating spy objects, using $args() for argument-specific stubs, or resetting mocks between tests."
+name: testbox-mockbox
+description: "Use this skill when creating mocks, stubs, and spies in TestBox using MockBox: createMock(), createEmptyMock(), prepareMock(), stubbing methods with $(), chaining $args()/$results()/$throws(), verifying call counts with $once()/$never()/$times()/$atLeast()/$atMost(), reading call logs with $callLog(), injecting mock properties with $property(), simulating queries with querySim(), or spying on real methods with $spy()."
 ---
 
-# Mocking with MockBox in ColdBox
+# MockBox — Mocking & Stubbing in TestBox
 
-## Overview
+## When to Use This Skill
 
-MockBox is TestBox's built-in mocking framework for creating test doubles (mocks, stubs, spies). Use it to replace external dependencies — databases, email services, APIs — with controlled test doubles that return predictable values.
+- Replacing real dependencies (DAOs, APIs, email services) with controlled test doubles
+- Stubbing method return values for different arguments
+- Verifying how many times a method was called and with what arguments
+- Making a method throw a specific exception
+- Spying on internal private methods of the object under test
+- Injecting mock property values directly into objects
 
-## Language Mode Reference
+---
 
-Examples use **BoxLang (`.bx`)** syntax by default. Adapt for your target language:
-
-| Concept | BoxLang (`.bx`) | CFML (`.cfc`) |
-|---------|-----------------|---------------|
-| Class declaration | `class [extends="..."] {` | `component [extends="..."] {` |
-| DI annotation | `@inject` above `property name="svc";` | `property name="svc" inject="svc";` |
-| View templates | `.bxm` suffix | `.cfm` / `.cfml` suffix |
-| Tag prefix | `<bx:if>`, `<bx:output>`, `<bx:set>` | `<cfif>`, `<cfoutput>`, `<cfset>` |
-
-> **CFML Compat Mode**: With BoxLang + CFML Compat module, `.bx` and `.cfc` files coexist freely. BoxLang-native classes use `class {}` (`.bx` files); CFML-compat classes use `component {}` (`.cfc` files).
-
-## Creating Mocks
+## Creating Test Doubles
 
 ```boxlang
-component extends="testbox.system.BaseSpec" {
+// Full mock — real class instantiated, all methods can be stubbed
+variables.mockUserService = createMock( "models.UserService" )
 
-    function run() {
-        describe( "MockBox basics", () => {
+// Full mock from an already-instantiated object
+variables.mockUserService = createMock( object: new models.UserService() )
 
-            beforeAll( () => {
-                // Create a full mock — all methods stubbed, return null by default
-                variables.mockUserService = createMock( "models.UserService" )
+// Empty mock — all methods wiped; you must stub every method used
+variables.mockDAO = createEmptyMock( "models.UserDAO" )
 
-                // Create a spy — real methods execute unless explicitly stubbed
-                variables.spyEmailService = createSpy( new models.EmailService() )
+// Partial mock — decorate a real object; unstubbed methods execute normally
+variables.spySecurity = prepareMock( new models.SecurityService() )
+```
 
-                // Create empty mock (for interfaces, abstract classes)
-                variables.mockInterface = createEmptyMock( "interfaces.IRepository" )
-            } )
-        } )
+| Factory | Methods kept? | Use case |
+|---|---|---|
+| `createMock()` | Yes (stubbable) | Replace collaborator dependencies |
+| `createEmptyMock()` | No (all wiped) | Mock an interface or abstract base |
+| `prepareMock()` | Yes (targeted stubs only) | Spy on internal private methods |
+
+---
+
+## Stubbing Return Values — `$()`
+
+```boxlang
+// Return a fixed value every call
+mockDAO.$( "findById" ).$results( { id: 1, name: "Alice" } )
+
+// Shorthand: inline returns
+mockDAO.$( "findById", { id: 1, name: "Alice" } )
+
+// Multiple sequential results (cycles on last after exhausting)
+mockDAO.$( "getNextRecord" ).$results( { id: 1 }, { id: 2 }, { id: 3 } )
+// call1 → {id:1},  call2 → {id:2},  call3+ → {id:3}
+
+// Chain multiple stubs on one mock
+mockService.$( "isFound", false ).$( "isDirty", false ).$( "isSaved", true )
+
+// Dynamic result via callback (receives caller arguments as array)
+mockCalc.$( "calculate", ( args ) => args[ 1 ] * 2 )
+
+// Void method (returns nothing, just track calls)
+mockEmailService.$( "send" )
+```
+
+---
+
+## Argument-Specific Stubs — `$args()`
+
+When the same method is called with **different arguments** and must return different values:
+
+```boxlang
+// Positional
+mockConfig.$( "getKey" )
+    .$args( "debugMode" ).$results( true )
+    .$args( "outgoingMail" ).$results( "dev@example.com" )
+
+// Named
+mockConfig.$( "getKey" )
+    .$args( name: "debugMode" ).$results( true )
+    .$args( name: "outgoingMail" ).$results( "dev@example.com" )
+
+// Usage
+expect( mockConfig.getKey( "debugMode" ) ).toBeTrue()
+expect( mockConfig.getKey( "outgoingMail" ) ).toBe( "dev@example.com" )
+```
+
+> Always follow `$args()` with `$results()`.
+
+---
+
+## Throwing Exceptions — `$throws()`
+
+```boxlang
+// Chain approach
+mockDAO.$( "delete" )
+    .$args( id: 999 )
+    .$throws( type: "NotFoundException", message: "Record 999 not found" )
+
+// Inline approach
+mockDAO.$(
+    method:         "delete",
+    throwException: true,
+    throwType:      "NotFoundException",
+    throwMessage:   "Record not found",
+    throwDetail:    "id=999",
+    throwErrorCode: "404"
+)
+
+// Confirm in spec
+expect( () => service.delete( 999 ) ).toThrow( type: "NotFoundException" )
+```
+
+---
+
+## Injecting Properties — `$property()`
+
+Inject a mock directly into any scope of the SUT without needing a setter:
+
+```boxlang
+prepareMock( variables.sut )
+    .$property(
+        propertyName:  "userRepository",
+        propertyScope: "variables",   // default
+        mock:          mockUserRepository
+    )
+
+// Read it back
+var injected = variables.sut.$getProperty( "userRepository" )
+```
+
+---
+
+## Query Simulation — `querySim()`
+
+Build query objects inline using pipe-delimited syntax:
+
+```boxlang
+var userQuery = querySim(
+    "id, name, email
+    1 | Alice Majano   | alice@example.com
+    2 | Bob Clapton    | bob@example.com
+    3 | Carol Degeneres| carol@example.com"
+)
+
+mockDAO.$( "findAll" ).$results( userQuery )
+
+var result = userService.listAll()
+expect( result.recordCount ).toBe( 3 )
+expect( result.name[ 1 ] ).toBe( "Alice Majano" )
+```
+
+---
+
+## Spying on Real Methods — `$spy()`
+
+The real implementation still executes; MockBox logs calls so you can verify them:
+
+```boxlang
+prepareMock( variables.sut )
+variables.sut.$spy( "sendWelcomeEmail" )
+
+userService.register( { name: "Alice", email: "alice@example.com" } )
+
+expect( variables.sut.$once( "sendWelcomeEmail" ) ).toBeTrue()
+```
+
+---
+
+## Verification Methods
+
+```boxlang
+// Exactly once
+expect( mockEmailService.$once( "send" ) ).toBeTrue()
+
+// Never called
+expect( mockAuditService.$never( "logError" ) ).toBeTrue()
+
+// Exactly N times
+expect( mockDAO.$times( 3, "findById" ) ).toBeTrue()
+expect( mockDAO.$verifyCallCount( 3, "findById" ) ).toBeTrue()   // alias
+
+// At least N (>= N)
+expect( mockDAO.$atLeast( 2, "findById" ) ).toBeTrue()
+
+// At most N (<= N)
+expect( mockDAO.$atMost( 5, "save" ) ).toBeTrue()
+
+// Raw count
+var total     = mockDAO.$count()            // all methods
+var saveCount = mockDAO.$count( "save" )    // specific method
+```
+
+---
+
+## Inspecting Call Logs — `$callLog()`
+
+`$callLog()` returns a struct keyed by method name; each value is an array of argument structs.
+
+```boxlang
+mockSession.$( "setVar", callLogging: true )
+mockSession.setVar( "Hello", "World" )
+mockSession.setVar( "Name",  "Alice" )
+
+var logs = mockSession.$callLog()
+// logs.setVar is an array of 2 ordered argument structs
+expect( logs.setVar ).toHaveLength( 2 )
+expect( logs.setVar[ 1 ][ "1" ] ).toBe( "Hello" )   // positional key "1"
+expect( logs.setVar[ 2 ][ "1" ] ).toBe( "Name" )
+```
+
+---
+
+## Resetting Between Specs
+
+```boxlang
+afterEach( () => {
+    mockDAO.$reset()             // clears $count, $callLog, all stubs remain
+    mockEmailService.$reset()
+} )
+```
+
+---
+
+## Complete Integration Example
+
+```boxlang
+class extends="testbox.system.BaseSpec" {
+
+    function beforeAll() {
+        variables.mockUserDAO     = createEmptyMock( "models.UserDAO" )
+        variables.mockEmailService = createEmptyMock( "models.EmailService" )
+
+        variables.sut = prepareMock( new models.UserService() )
+            .$property( propertyName: "userDAO",      mock: mockUserDAO )
+            .$property( propertyName: "emailService", mock: mockEmailService )
     }
-}
-```
-
-## Stubbing Return Values
-
-```boxlang
-// Stub a method to return a value
-mockService.$( "findById" ).$results( { id: 1, name: "Alice" } )
-
-// Stub with multiple sequential results (cycles through)
-mockService.$( "getNextItem" ).$results( "first", "second", "third" )
-
-// Stub with a closure for dynamic responses
-mockService.$( "calculate" ).$results( ( args ) => args[1] * 2 )
-
-// Stub to throw an exception
-mockService.$( "dangerousMethod" ).$throws( type: "CustomException", message: "Failed" )
-
-// Stub based on specific arguments
-mockService
-    .$( "find" )
-    .$args( id: 1 ).$results( { id: 1, name: "Alice" } )
-    .$args( id: 2 ).$results( { id: 2, name: "Bob" } )
-
-// Stub method to return void (for methods with no return)
-mockService.$( "sendEmail" )
-
-// Stub with a callback
-mockService.$( "process", function( args ) {
-    // Custom logic
-    return { processed: true, count: args[1].len() }
-} )
-```
-
-## Verifying Method Calls
-
-```boxlang
-component extends="testbox.system.BaseSpec" {
 
     function run() {
-        describe( "Verification", () => {
 
-            it( "should verify a method was called once", () => {
-                mockService.$( "sendEmail" )
-
-                orderService.placeOrder( orderData )
-
-                // Called exactly once
-                expect( mockService.$once( "sendEmail" ) ).toBeTrue()
-            } )
-
-            it( "should verify exact call count", () => {
-                mockService.$( "log" )
-
-                service.processItems( [ 1, 2, 3 ] )
-
-                // Called exactly 3 times
-                expect( mockService.$times( 3, "log" ) ).toBeTrue()
-            } )
-
-            it( "should verify a method was never called", () => {
-                mockService.$( "sendAlert" )
-
-                service.processNormalItem( item )
-
-                expect( mockService.$never( "sendAlert" ) ).toBeTrue()
-            } )
-
-            it( "should verify at least N times", () => {
-                mockService.$( "save" )
-
-                service.bulkSave( items )
-
-                expect( mockService.$atLeast( 1, "save" ) ).toBeTrue()
-            } )
-        } )
-    }
-}
-```
-
-## Inspecting Call Arguments
-
-```boxlang
-it( "should pass correct args to payment gateway", () => {
-    mockPayment.$( "charge" ).$results( { success: true, txnId: "T123" } )
-
-    orderService.placeOrder( { total: 99.99, customerId: 5 } )
-
-    // Inspect what args were passed
-    callLog = mockPayment.$callLog().charge
-
-    expect( callLog ).toHaveLength( 1 )
-    expect( callLog[1][1] ).toBe( 99.99 )     // first arg of first call
-    expect( callLog[1].customerId ).toBe( 5 )  // named arg
-} )
-```
-
-## Resetting Mocks
-
-```boxlang
-describe( "with mock resets", () => {
-
-    beforeEach( () => {
-        // Reset call counters but keep stubs
-        mockService.$reset()
-
-        // Re-stub for this test
-        mockService.$( "findById" ).$results( testUser )
-    } )
-
-    it( "test 1", () => {
-        service.doSomething()
-        expect( mockService.$once( "findById" ) ).toBeTrue()
-    } )
-
-    it( "test 2 - mock is clean", () => {
-        service.doSomething()
-        // call count restarted from 0
-        expect( mockService.$once( "findById" ) ).toBeTrue()
-    } )
-} )
-```
-
-## Full Integration Example
-
-```boxlang
-component extends="testbox.system.BaseSpec" {
-
-    function run() {
-        describe( "OrderService with mocks", () => {
-
-            beforeAll( () => {
-                // Create mocks
-                variables.mockPaymentGateway = createMock( "models.PaymentGateway" )
-                variables.mockEmailService   = createMock( "models.EmailService" )
-                variables.mockInventory      = createMock( "models.InventoryService" )
-
-                // Inject mocks into service (constructor injection)
-                variables.orderService = new models.OrderService(
-                    paymentGateway: mockPaymentGateway,
-                    emailService:   mockEmailService,
-                    inventory:      mockInventory
-                )
-            } )
+        describe( "UserService.register()", () => {
 
             beforeEach( () => {
-                // Reset all mocks before each test
-                mockPaymentGateway.$reset()
+                mockUserDAO.$reset()
                 mockEmailService.$reset()
-                mockInventory.$reset()
-
-                // Default stubs
-                mockInventory.$( "checkStock" ).$results( true )
-                mockPaymentGateway.$( "charge" ).$results( { success: true, transactionId: "TXN001" } )
-                mockEmailService.$( "sendOrderConfirmation" )
             } )
 
-            it( "should process valid order", () => {
-                order = orderService.placeOrder( {
-                    items: [ { productId: 1, qty: 1 } ],
-                    total: 29.99,
-                    customerId: 42
-                } )
+            it( "saves user and sends welcome email", () => {
+                mockUserDAO.$( "save" ).$results( { id: 1, name: "Alice" } )
+                mockEmailService.$( "sendWelcome" )
 
-                expect( order.status ).toBe( "confirmed" )
-                expect( mockPaymentGateway.$once( "charge" ) ).toBeTrue()
-                expect( mockEmailService.$once( "sendOrderConfirmation" ) ).toBeTrue()
+                var result = sut.register( { name: "Alice", email: "alice@example.com" } )
+
+                expect( result.id ).toBe( 1 )
+                expect( mockUserDAO.$once( "save" ) ).toBeTrue()
+                expect( mockEmailService.$once( "sendWelcome" ) ).toBeTrue()
             } )
 
-            it( "should fail when out of stock", () => {
-                // Override default stock stub
-                mockInventory.$( "checkStock" ).$results( false )
+            it( "does not send email when save fails", () => {
+                mockUserDAO.$( "save" )
+                    .$throws( type: "DatabaseException", message: "Duplicate entry" )
 
-                expect( () => {
-                    orderService.placeOrder( { items: [ { productId: 1, qty: 1 } ] } )
-                } ).toThrow( type: "OutOfStockException" )
+                expect( () => sut.register( { name: "Dup", email: "dup@example.com" } ) )
+                    .toThrow( type: "DatabaseException" )
 
-                // Payment should NOT be charged
-                expect( mockPaymentGateway.$never( "charge" ) ).toBeTrue()
+                expect( mockEmailService.$never( "sendWelcome" ) ).toBeTrue()
             } )
+
+            it( "calls save with the correct data arguments", () => {
+                mockUserDAO.$( "save", callLogging: true ).$results( { id: 2 } )
+                mockEmailService.$( "sendWelcome" )
+
+                sut.register( { name: "Bob", email: "bob@example.com" } )
+
+                var log = mockUserDAO.$callLog()
+                expect( log.save[ 1 ] ).toHaveKey( "name" )
+                expect( log.save[ 1 ].name ).toBe( "Bob" )
+            } )
+
         } )
+
     }
+
 }
 ```
 
-## MockBox Quick Reference
+---
 
-| Method | Purpose |
-|--------|---------|
-| `createMock( "path.to.Class" )` | Create mock of a class (all methods stubbed) |
-| `createSpy( object )` | Create spy on real object |
-| `createEmptyMock( "path" )` | Create empty mock (no real implementation) |
-| `mock.$( "method" )` | Start stubbing a method |
-| `.$results( val )` | Set method return value |
-| `.$args( ... )` | Match specific arguments |
-| `.$throws( type, message )` | Make method throw exception |
-| `.$reset()` | Reset call counters |
-| `mock.$once( "method" )` | Returns true if called exactly once |
-| `mock.$never( "method" )` | Returns true if never called |
-| `mock.$times( n, "method" )` | Returns true if called n times |
-| `mock.$atLeast( n, "method" )` | Returns true if called at least n times |
-| `mock.$callLog()` | Get struct of all method call logs |
+## Quick Reference
 
-## When to Mock
-
-- **Mock**: Databases, file system, external HTTP APIs, email/SMS services, slow operations, third-party services
-- **Don't Mock**: Value objects, simple utilities, the system under test itself
-- **Use Spies**: When you want real behavior but also want to verify calls
+| Method | Returns | Description |
+|---|---|---|
+| `createMock( className\|object )` | mock | Full mock, methods intact |
+| `createEmptyMock( className\|object )` | mock | All methods wiped |
+| `prepareMock( object )` | mock | Decorate existing instance |
+| `mock.$( method, [returns] )` | mock | Stub a method |
+| `mock.$args( ...args )` | mock | Match specific call arguments |
+| `mock.$results( ...values )` | mock | Set sequential return values |
+| `mock.$throws( type, message, detail )` | mock | Make method throw |
+| `mock.$property( name, scope, mock )` | mock | Inject into any scope |
+| `mock.$getProperty( name, [scope] )` | any | Read internal property |
+| `mock.$spy( method )` | mock | Spy on real method (real runs + log) |
+| `querySim( dsv )` | query | Build query from pipe-delimited string |
+| `mock.$once( [method] )` | boolean | Called exactly once |
+| `mock.$never( [method] )` | boolean | Never called |
+| `mock.$times( n, [method] )` | boolean | Called exactly N times |
+| `mock.$atLeast( n, [method] )` | boolean | Called >= N times |
+| `mock.$atMost( n, [method] )` | boolean | Called <= N times |
+| `mock.$count( [method] )` | numeric | Call count |
+| `mock.$callLog()` | struct | All call argument logs |
+| `mock.$reset()` | void | Reset counters and logs |
+| `mock.$debug()` | struct | Debugging info |
