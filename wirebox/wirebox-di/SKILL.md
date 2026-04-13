@@ -1,13 +1,13 @@
 ---
-name: coldbox-wirebox-di
-description: Use this skill when implementing dependency injection in ColdBox with WireBox, using property/constructor/setter injection, configuring the WireBox binder, working with injection DSL (coldbox:, provider:, model:), mapping interfaces to implementations, or creating singleton vs transient instances.
+name: wirebox-di
+description: Use this skill when implementing dependency injection in your applications with WireBox, using property/constructor/setter injection, configuring the WireBox binder, working with injection DSL (coldbox:, provider:, model:), mapping interfaces to implementations, or creating singleton vs transient instances.
 ---
 
 # WireBox Dependency Injection
 
 ## When to Use This Skill
 
-Use this skill when wiring dependencies in ColdBox applications using WireBox — the built-in IoC/DI framework.
+Use this skill when wiring dependencies in your applications using WireBox — the built-in IoC/DI framework.
 
 ## Language Mode Reference
 

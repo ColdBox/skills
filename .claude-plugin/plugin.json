@@ -13,7 +13,7 @@
   "keywords": ["coldbox", "boxlang", "cfml", "wirebox", "cachebox", "logbox", "testbox", "ortus", "mvc", "rest"],
   "skills": [
     "./coldbox/",
-    "./testing/",
+    "./testbox/",
     "./security/",
     "./orm/",
     "./wirebox/",

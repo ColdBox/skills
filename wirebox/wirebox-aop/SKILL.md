@@ -1,6 +1,6 @@
 ---
-name: coldbox-wirebox-aop
-description: "Use this skill when implementing Aspect-Oriented Programming (AOP) in ColdBox with WireBox, creating method interceptors for cross-cutting concerns like logging, performance monitoring, security authorization, caching, transaction management, retry logic, or rate limiting using before/after/around/onException advice."
+name: wirebox-aop
+description: "Use this skill when implementing Aspect-Oriented Programming (AOP) in your applications with WireBox, creating method interceptors for cross-cutting concerns like logging, performance monitoring, security authorization, caching, transaction management, retry logic, or rate limiting using before/after/around/onException advice."
 ---
 
 # WireBox Aspect-Oriented Programming (AOP)

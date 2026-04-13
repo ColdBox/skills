@@ -21,6 +21,12 @@ npx skills add ortus-boxlang/coldbox-skills/coldbox
 ```bash
 # Install a specific skill
 npx skills add ortus-boxlang/coldbox-skills/coldbox/handler-development
+
+# Install the dedicated TestBox category
+npx skills add ortus-boxlang/coldbox-skills/testbox
+
+# Install a specific TestBox skill
+npx skills add ortus-boxlang/coldbox-skills/testbox/bdd-tdd-foundations
 ```
 
 ## Claude Plugin Install
@@ -45,7 +51,7 @@ If you use plugin marketplace commands:
 The current [`.claude-plugin/plugin.json`](./.claude-plugin/plugin.json) registers these categories for plugin install:
 
 - `coldbox`
-- `testing`
+- `testbox`
 - `security`
 - `orm`
 - `wirebox`
@@ -67,29 +73,41 @@ The repository also contains a `docbox/` category with additional skills that ar
 | [`event-model`](./coldbox/event-model/SKILL.md) | Event lifecycle, `event`, `rc`, `prc`, rendering and redirects |
 | [`rest-api-development`](./coldbox/rest-api-development/SKILL.md) | RestHandler patterns, API validation, versioning, error handling |
 | [`interceptor-development`](./coldbox/interceptor-development/SKILL.md) | Interceptors, framework interception points, custom events |
-| [`coldbox-configuration`](./coldbox/coldbox-configuration/SKILL.md) | `ColdBox.cfc`, settings, conventions, environment configuration |
+| [`configuration`](./coldbox/configuration/SKILL.md) | `ColdBox.cfc`, settings, conventions, environment configuration |
+| [`app-layouts`](./coldbox/app-layouts/SKILL.md) | Flat, BoxLang, and Modern app layout selection, directory structures, engine compatibility, and migration guidance |
 | [`view-rendering`](./coldbox/view-rendering/SKILL.md) | Views, layouts, partials, helpers, data rendering |
 | [`layout-development`](./coldbox/layout-development/SKILL.md) | Layout patterns, nested layouts, conditional layouts |
 | [`module-development`](./coldbox/module-development/SKILL.md) | Module structure, `ModuleConfig.cfc`, routes, settings |
-| [`coldbox-request-context`](./coldbox/coldbox-request-context/SKILL.md) | Request context, flash scope, collections, metadata |
-| [`coldbox-flash-messaging`](./coldbox/coldbox-flash-messaging/SKILL.md) | Flash RAM, message persistence, success/error/info/warning patterns |
+| [`request-context`](./coldbox/request-context/SKILL.md) | Request context, flash scope, collections, metadata |
+| [`flash-messaging`](./coldbox/flash-messaging/SKILL.md) | Flash RAM, message persistence, success/error/info/warning patterns |
 | [`cache-integration`](./coldbox/cache-integration/SKILL.md) | Event and view caching, cache keys, cache invalidation |
 | [`coldbox-cli`](./coldbox/coldbox-cli/SKILL.md) | `coldbox create` workflows, app skeletons, language flags, scaffolding |
 | [`coldbox-documenter`](./coldbox/coldbox-documenter/SKILL.md) | Documentation standards for handlers, models, modules, config files |
 | [`coldbox-reviewer`](./coldbox/coldbox-reviewer/SKILL.md) | Code review heuristics for ColdBox applications and modules |
 
-### `testing` — TestBox and Test Workflow Skills
+#### Testing Skills
 
 | Skill | What It Covers |
 |---|---|
-| [`testing-bdd`](./testing/testing-bdd/SKILL.md) | BDD specs, `describe`, `it`, matchers, lifecycle hooks |
-| [`testing-unit`](./testing/testing-unit/SKILL.md) | Unit testing patterns and isolated component testing |
-| [`testing-integration`](./testing/testing-integration/SKILL.md) | ColdBox integration specs and endpoint execution |
-| [`testing-handler`](./testing/testing-handler/SKILL.md) | Handler testing, `rc`/`prc` assertions, rendered output checks |
-| [`testing-mocking`](./testing/testing-mocking/SKILL.md) | MockBox, mocks, stubs, verification, argument matching |
-| [`testing-fixtures`](./testing/testing-fixtures/SKILL.md) | Seed data, fixtures, factories, test helpers |
-| [`testing-coverage`](./testing/testing-coverage/SKILL.md) | Coverage reports and CI wiring |
-| [`testing-ci`](./testing/testing-ci/SKILL.md) | TestBox in CI pipelines and reporters |
+| [`testing-base-classes`](./coldbox/testing-base-classes/SKILL.md) | Testing class hierarchy, annotations (appMapping, configMapping, unloadColdBox), test harness setup, when to use each base class |
+| [`testing-handler`](./coldbox/testing-handler/SKILL.md) | Handler testing with `execute()`, rc/prc assertions, view selection, renderData, relocations, mock injection, BaseHandlerTest isolation |
+| [`testing-integration`](./coldbox/testing-integration/SKILL.md) | Full virtual-app integration tests, lifecycle management, route testing, database rollback, custom matchers |
+| [`testing-http-methods`](./coldbox/testing-http-methods/SKILL.md) | `get()`, `post()`, `put()`, `patch()`, `delete()`, `request()` simulation, headers, JSON bodies, `toHaveStatus()`, `toHaveInvalidData()` |
+| [`testing-model`](./coldbox/testing-model/SKILL.md) | BaseModelTest, the `model` variable, mockLogger/mockLogBox/mockCacheBox/mockWireBox, mocking collaborators, init() patterns |
+| [`testing-interceptor`](./coldbox/testing-interceptor/SKILL.md) | BaseInterceptorTest, the `interceptor` variable, mockController/mockRequestService/mockFlash, configProperties, announce point testing |
+
+### `testbox` — Comprehensive TestBox Skills
+
+| Skill | What It Covers |
+|---|---|
+| [`bdd-tdd-foundations`](./testbox/bdd-tdd-foundations/SKILL.md) | Test style selection, behavior-first suite design, BDD/TDD strategy |
+| [`specs-and-lifecycle`](./testbox/specs-and-lifecycle/SKILL.md) | Suite hooks, setup/teardown patterns, deterministic test isolation |
+| [`assertions-and-matchers`](./testbox/assertions-and-matchers/SKILL.md) | Expectations, matcher families, exception assertions, readable failures |
+| [`mockbox-testing-doubles`](./testbox/mockbox-testing-doubles/SKILL.md) | Mocks, stubs, spies, behavior setup, interaction verification |
+| [`coldbox-integration-testing`](./testbox/coldbox-integration-testing/SKILL.md) | `BaseTestCase`, event execution, request/response assertions |
+| [`data-fixtures-and-isolation`](./testbox/data-fixtures-and-isolation/SKILL.md) | Fixture builders, deterministic data, rollback and cleanup strategies |
+| [`runners-reporters-and-ci`](./testbox/runners-reporters-and-ci/SKILL.md) | Runner commands, reporters, coverage, CI integration |
+| [`cfml-boxlang-duality`](./testbox/cfml-boxlang-duality/SKILL.md) | BoxLang-first with CFML parity and mixed-codebase migration patterns |
 
 ### `security` — Security and Authentication Skills
 
@@ -153,7 +171,7 @@ The bundled [`.mcp.json`](./.mcp.json) includes Ortus documentation MCP endpoint
 | Path | Purpose |
 |---|---|
 | [`coldbox/`](./coldbox/) | Core ColdBox framework skills |
-| [`testing/`](./testing/) | TestBox and CI/testing skills |
+| [`testbox/`](./testbox/) | Dedicated comprehensive TestBox skills |
 | [`security/`](./security/) | Authentication, authorization, CSRF, SSO, passkeys |
 | [`orm/`](./orm/) | QB, Quick ORM, CBORM, migrations |
 | [`wirebox/`](./wirebox/) | WireBox DI and AOP skills |
