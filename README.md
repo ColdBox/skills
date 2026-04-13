@@ -23,6 +23,21 @@ npx skills add ortus-boxlang/coldbox-skills/coldbox
 npx skills add ortus-boxlang/coldbox-skills/coldbox/handler-development
 ```
 
+## Claude Plugin Install
+
+Install this repository as a Claude plugin:
+
+```bash
+claude plugin install https://github.com/ortus-boxlang/coldbox-skills
+```
+
+If you use plugin marketplace commands:
+
+```bash
+/plugin marketplace add ortus-boxlang/coldbox-skills
+/plugin install coldbox-agent-skills@ortus-boxlang
+```
+
 ---
 
 ## Manifest Coverage
