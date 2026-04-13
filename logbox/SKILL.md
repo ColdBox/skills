@@ -833,4 +833,3 @@ console : {
 - **Rolling file in production**: set `fileMaxSize : 5000` (5 MB) and `fileMaxArchives : 5` to cap disk usage
 - **Async appenders** (`async : true`) for high-throughput systems — be aware that async logging may lose entries on abrupt shutdown
 - **Custom appenders for third-party sinks** (Slack, PagerDuty, CloudWatch): keep all transport logic inside the appender, never inline in services
-
