@@ -1,6 +1,6 @@
 ---
 name: coldbox-async-programming
-description: Use this skill when building async pipelines, working with ColdBox Futures, running parallel computations with all()/allApply()/anyOf(), registering and managing thread-pool executors, or accessing the AsyncManager via the async() helper.
+description: "Use this skill when building async pipelines, working with ColdBox Futures, running parallel computations with all()/allApply()/anyOf(), registering and managing thread-pool executors, or accessing the AsyncManager via the async() helper."
 ---
 
 # Async Programming (Futures & Executors)

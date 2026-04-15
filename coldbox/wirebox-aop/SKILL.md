@@ -1,6 +1,6 @@
 ---
 name: wirebox-aop
-description: Use this skill when working with WireBox Aspect-Oriented Programming (AOP) — activating the AOP engine (Mixer listener), creating method interceptor aspects, registering aspects via mapAspect(), binding aspects to classes and methods via bindAspect(), using the Matcher DSL (any, regex, mappings, instanceOf, annotatedWith, methods, returns), auto-aspect binding via classMatcher/methodMatcher annotations, the MethodInvocation API (proceed, getArgs, getTarget, getMethod), using built-in aspects (CFTransaction, HibernateTransaction, MethodLogger), and AOP in both standalone WireBox and ColdBox applications.
+description: "Use this skill when working with WireBox Aspect-Oriented Programming (AOP) -- activating the AOP engine (Mixer listener), creating method interceptor aspects, registering aspects via mapAspect(), binding aspects to classes and methods via bindAspect(), using the Matcher DSL (any, regex, mappings, instanceOf, annotatedWith, methods, returns), auto-aspect binding via classMatcher/methodMatcher annotations, the MethodInvocation API (proceed, getArgs, getTarget, getMethod), using built-in aspects (CFTransaction, HibernateTransaction, MethodLogger), and AOP in both standalone WireBox and ColdBox applications."
 ---
 
 # WireBox AOP — Aspect-Oriented Programming

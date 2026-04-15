@@ -1,6 +1,6 @@
 ---
 name: cachebox-standalone
-description: Use this skill when working with CacheBox as a standalone caching framework (outside ColdBox) — installing, creating and bootstrapping the CacheFactory, configuring the DSL, choosing object stores and eviction policies, selecting cache providers (CacheBoxProvider, CF, Lucee), implementing cache-aside/stampede-protection patterns, registering standalone listeners, named caches, disk/JDBC stores, reaping, shutdown, or monitoring cache performance.
+description: "Use this skill when working with CacheBox as a standalone caching framework (outside ColdBox) -- installing, creating and bootstrapping the CacheFactory, configuring the DSL, choosing object stores and eviction policies, selecting cache providers (CacheBoxProvider, CF, Lucee), implementing cache-aside/stampede-protection patterns, registering standalone listeners, named caches, disk/JDBC stores, reaping, shutdown, or monitoring cache performance."
 ---
 
 # CacheBox — Standalone Framework

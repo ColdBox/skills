@@ -1,7 +1,7 @@
 ---
 name: logbox
 description: >
-  Use this skill whenever working with LogBox — standalone or inside a ColdBox application. Covers installation,
+  Use this skill whenever working with LogBox -- standalone or inside a ColdBox application. Covers installation,
   configuration DSL (appenders, root logger, categories), all built-in appender types with their properties,
   logger injection via WireBox DSL, category inheritance, structured logging with extraInfo, performance patterns
   (can{} methods, closure messages), custom appenders, custom layouts, async logging, environment-specific config,

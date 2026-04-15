@@ -1,6 +1,6 @@
 ---
 name: coldbox-interceptor-development
-description: Use this skill when creating ColdBox interceptors for cross-cutting concerns, listening to framework lifecycle events, implementing security checks, logging, CORS, rate limiting, request/response transformation, or firing and listening to custom interception points.
+description: "Use this skill when creating ColdBox interceptors for cross-cutting concerns, listening to framework lifecycle events, implementing security checks, logging, CORS, rate limiting, request/response transformation, or firing and listening to custom interception points."
 ---
 
 # Interceptor Development

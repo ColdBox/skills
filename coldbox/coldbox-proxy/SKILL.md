@@ -1,6 +1,6 @@
 ---
 name: coldbox-proxy
-description: Use this skill when building ColdBox Proxy objects to expose ColdBox event handlers to remote callers such as ColdFusion web services, Flex/AIR, event gateways, or CFC data binding — enabling non-HTTP protocols to participate in the ColdBox event model.
+description: "Use this skill when building ColdBox Proxy objects to expose ColdBox event handlers to remote callers such as ColdFusion web services, Flex/AIR, event gateways, or CFC data binding -- enabling non-HTTP protocols to participate in the ColdBox event model."
 ---
 
 # ColdBox Proxy

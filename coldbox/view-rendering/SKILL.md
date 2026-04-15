@@ -1,6 +1,6 @@
 ---
 name: coldbox-view-rendering
-description: Use this skill when rendering views and partials in ColdBox, creating reusable view components, caching view output, passing data to views, rendering views from services, using renderView() inline, or dynamically selecting views based on context.
+description: "Use this skill when rendering views and partials in ColdBox, creating reusable view components, caching view output, passing data to views, rendering views from services, using renderView() inline, or dynamically selecting views based on context."
 ---
 
 # View Rendering

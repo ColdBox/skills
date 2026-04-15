@@ -1,6 +1,6 @@
 ---
 name: coldbox-layout-development
-description: Use this skill when creating ColdBox layouts (master page templates), building admin layouts, creating reusable view partials, implementing nested content rendering with renderView(), switching layouts dynamically per handler, or organizing HTML structure around content views.
+description: "Use this skill when creating ColdBox layouts (master page templates), building admin layouts, creating reusable view partials, implementing nested content rendering with renderView(), switching layouts dynamically per handler, or organizing HTML structure around content views."
 ---
 
 # Layout Development

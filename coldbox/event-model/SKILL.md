@@ -1,6 +1,6 @@
 ---
 name: coldbox-event-model
-description: Use this skill when working with the ColdBox event object (prc/rc), managing request collections, rendering views and data responses, handling redirects with relocate(), controlling HTTP status codes, or implementing event caching in ColdBox handlers.
+description: "Use this skill when working with the ColdBox event object (prc/rc), managing request collections, rendering views and data responses, handling redirects with relocate(), controlling HTTP status codes, or implementing event caching in ColdBox handlers."
 ---
 
 # ColdBox Event Model
