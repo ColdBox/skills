@@ -1,6 +1,6 @@
 ---
 name: coldbox-decorators
-description: Use this skill when extending or overriding ColdBox framework internals via the Decorator pattern — specifically creating a ControllerDecorator to wrap the main ColdBox controller, or a RequestContextDecorator to wrap and augment the request context (event) object with custom methods or overridden behavior.
+description: "Use this skill when extending or overriding ColdBox framework internals via the Decorator pattern -- specifically creating a ControllerDecorator to wrap the main ColdBox controller, or a RequestContextDecorator to wrap and augment the request context (event) object with custom methods or overridden behavior."
 ---
 
 # ColdBox Decorators (Controller & Request Context)

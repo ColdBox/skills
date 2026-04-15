@@ -1,6 +1,6 @@
 ---
 name: coldbox-handler-development
-description: Use this skill when creating ColdBox handlers (controllers), implementing CRUD actions, adding dependency injection to handlers, working with preHandler/postHandler advices, secured actions, REST handlers, or the EventHandler base class.
+description: "Use this skill when creating ColdBox handlers (controllers), implementing CRUD actions, adding dependency injection to handlers, working with preHandler/postHandler advices, secured actions, REST handlers, or the EventHandler base class."
 ---
 
 # Handler Development

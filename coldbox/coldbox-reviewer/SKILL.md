@@ -1,6 +1,6 @@
 ---
 name: coldbox-reviewer
-description: Use this skill when reviewing ColdBox application code for correctness, security, performance, testability, and adherence to ColdBox conventions. Covers handlers, services, models, interceptors, modules, routing, ORM/OBM usage, REST APIs, dependency injection patterns, and common anti-patterns to flag during pull request reviews.
+description: "Use this skill when reviewing ColdBox application code for correctness, security, performance, testability, and adherence to ColdBox conventions. Covers handlers, services, models, interceptors, modules, routing, ORM/OBM usage, REST APIs, dependency injection patterns, and common anti-patterns to flag during pull request reviews."
 ---
 
 # ColdBox Code Reviewer

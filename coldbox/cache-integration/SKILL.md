@@ -1,6 +1,6 @@
 ---
 name: coldbox-cache-integration
-description: Use this skill when implementing caching inside a ColdBox application — configuring CacheBox via ColdBox.cfc or config/CacheBox.cfc, injecting caches with WireBox (cachebox:name), using getCache() in handlers, event/view output caching with setEventCacheableEntry(), view fragment caching with renderView(cache=true), query caching, cache listeners as ColdBox interceptors, Redis/distributed provider setup, or choosing between default and template caches.
+description: "Use this skill when implementing caching inside a ColdBox application -- configuring CacheBox via ColdBox.cfc or config/CacheBox.cfc, injecting caches with WireBox (cachebox:name), using getCache() in handlers, event/view output caching with setEventCacheableEntry(), view fragment caching with renderView(cache=true), query caching, cache listeners as ColdBox interceptors, Redis/distributed provider setup, or choosing between default and template caches."
 ---
 
 # CacheBox — ColdBox Integration

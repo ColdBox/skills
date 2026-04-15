@@ -1,6 +1,6 @@
 ---
 name: coldbox-module-development
-description: Use this skill when creating reusable ColdBox modules, writing ModuleConfig.cfc, defining module-specific routes, models, settings, and interceptors, packaging modules for ForgeBox, or building internal application sub-systems as modules.
+description: "Use this skill when creating reusable ColdBox modules, writing ModuleConfig.cfc, defining module-specific routes, models, settings, and interceptors, packaging modules for ForgeBox, or building internal application sub-systems as modules."
 ---
 
 # Module Development

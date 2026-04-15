@@ -1,6 +1,6 @@
 ---
 name: coldbox-documenter
-description: Use this skill when writing or improving documentation comments for ColdBox application code — handlers, models, services, interceptors, layouts, modules, and configuration files. Covers what to document, what to skip, ColdBox-specific patterns for @event/@rc/@prc, integration with DocBox annotations, and documentation standards that result in accurate, useful API docs.
+description: "Use this skill when writing or improving documentation comments for ColdBox application code -- handlers, models, services, interceptors, layouts, modules, and configuration files. Covers what to document, what to skip, ColdBox-specific patterns for @event/@rc/@prc, integration with DocBox annotations, and documentation standards that result in accurate, useful API docs."
 ---
 
 # ColdBox Documenter

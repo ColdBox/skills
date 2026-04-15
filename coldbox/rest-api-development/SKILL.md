@@ -1,6 +1,6 @@
 ---
 name: coldbox-rest-api-development
-description: Use this skill when building RESTful APIs in ColdBox using RestHandler, creating CRUD API endpoints, implementing API versioning, handling JWT/bearer token authentication, building structured error responses, or creating resource representations with mementos.
+description: "Use this skill when building RESTful APIs in ColdBox using RestHandler, creating CRUD API endpoints, implementing API versioning, handling JWT/bearer token authentication, building structured error responses, or creating resource representations with mementos."
 ---
 
 # REST API Development

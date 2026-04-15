@@ -1,6 +1,6 @@
 ---
 name: coldbox-request-context
-description: Use this skill when working with the ColdBox RequestContext object (event), managing rc and prc collections, building URLs with buildLink(), detecting HTTP methods, accessing request metadata, working with flash scope, handling AJAX requests, or reading HTTP headers and body content.
+description: "Use this skill when working with the ColdBox RequestContext object (event), managing rc and prc collections, building URLs with buildLink(), detecting HTTP methods, accessing request metadata, working with flash scope, handling AJAX requests, or reading HTTP headers and body content."
 ---
 
 # ColdBox Request Context

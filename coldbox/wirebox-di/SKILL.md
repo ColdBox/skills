@@ -1,6 +1,6 @@
 ---
 name: coldbox-di
-description: Use this skill when working with dependency injection inside a ColdBox application — the ColdBox injection DSL namespaces (coldbox:, logbox:, cachebox:, wirebox:, model:), module settings injection, injecting ColdBox services (interceptors, flash, router, scheduler), configuring the WireBox binder in ColdBox context, the enhanced ColdBox binder helpers, or wiring handlers/interceptors/models via ColdBox-aware WireBox.
+description: "Use this skill when working with dependency injection inside a ColdBox application -- the ColdBox injection DSL namespaces (coldbox:, logbox:, cachebox:, wirebox:, model:), module settings injection, injecting ColdBox services (interceptors, flash, router, scheduler), configuring the WireBox binder in ColdBox context, the enhanced ColdBox binder helpers, or wiring handlers/interceptors/models via ColdBox-aware WireBox."
 ---
 
 # ColdBox — Dependency Injection

@@ -1,6 +1,6 @@
 ---
 name: coldbox-app-layouts
-description: Use this skill when choosing a ColdBox application layout (flat, boxlang, or modern), scaffolding a new ColdBox project, understanding project directory structure, deciding between app structure options, or migrating from one layout to another. Use when asked about flat layout, boxlang template, modern template, app structure, project skeleton, or web root separation.
+description: "Use this skill when choosing a ColdBox application layout (flat, boxlang, or modern), scaffolding a new ColdBox project, understanding project directory structure, deciding between app structure options, or migrating from one layout to another. Use when asked about flat layout, boxlang template, modern template, app structure, project skeleton, or web root separation."
 ---
 
 # App Layouts

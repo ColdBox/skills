@@ -1,6 +1,6 @@
 ---
 name: coldbox-docbox-generation
-description: Use this skill when configuring DocBox to generate API documentation, choosing output strategies (HTML, JSON, UML, CommandBox), setting up single or multiple source directories, running DocBox from BoxLang CLI or CommandBox CLI, customizing HTML themes, excluding files/folders from output, or building custom output strategies.
+description: "Use this skill when configuring DocBox to generate API documentation, choosing output strategies (HTML, JSON, UML, CommandBox), setting up single or multiple source directories, running DocBox from BoxLang CLI or CommandBox CLI, customizing HTML themes, excluding files/folders from output, or building custom output strategies."
 ---
 
 # DocBox Documentation Generation
