@@ -15,7 +15,6 @@
     "./coldbox/",
     "./testbox/",
     "./security/",
-    "./orm/",
     "./wirebox/",
     "./cachebox/",
     "./logbox/",
