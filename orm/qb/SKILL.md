@@ -42,7 +42,7 @@ moduleSettings = {
 ## Injection
 
 ```boxlang
-property name="qb" inject="QueryBuilder@qb"
+property name="qb" inject="provider:QueryBuilder@qb";
 ```
 
 ## SELECT Queries
