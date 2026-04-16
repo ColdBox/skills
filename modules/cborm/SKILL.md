@@ -208,6 +208,57 @@ class extends="cborm.models.BaseORMService" {
 }
 ```
 
+## Legacy ORM Coverage (Merged from former `orm/cborm`)
+
+### Language Mode Reference
+
+| Concept | BoxLang (`.bx`) | CFML (`.cfc`) |
+|---|---|---|
+| Class declaration | `class [extends="..."] {` | `component [extends="..."] {` |
+| DI annotation | `@inject` + `property` | `property ... inject="...";` |
+| View templates | `.bxm` | `.cfm` / `.cfml` |
+
+### Application ORM Setup
+
+```boxlang
+this.ormEnabled  = true
+this.ormSettings = {
+    cfclocation:       [ "/models" ],
+    dbcreate:          "update",
+    flushAtRequestEnd: false,
+    autoManageSession: false,
+    eventHandling:     true,
+    eventHandler:      "cborm.models.EventHandler"
+}
+```
+
+### ActiveEntity Pattern
+
+```boxlang
+class extends="cborm.models.ActiveEntity" {
+    property name="id" fieldtype="id" generator="uuid"
+    property name="email" unique="true"
+
+    function findActive() {
+        return newCriteria().eq( "active", true ).list( sortOrder: "lastName" )
+    }
+}
+```
+
+### ORM Event Interceptor Example
+
+```boxlang
+class {
+    function preInsert( entity ) {
+        entity.setCreatedAt( now() )
+    }
+
+    function preUpdate( entity ) {
+        entity.setUpdatedAt( now() )
+    }
+}
+```
+
 ## Best Practices
 
 - **Prefer `getOrFail()`** over `get()` when the record must exist — throws a typed exception you can catch

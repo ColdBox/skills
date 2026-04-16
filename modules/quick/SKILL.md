@@ -218,6 +218,37 @@ class extends="quick.models.BaseEntity" {
 }
 ```
 
+## Legacy ORM Coverage (Merged from former `orm/quick-orm`)
+
+### Language Mode Reference
+
+| Concept | BoxLang (`.bx`) | CFML (`.cfc`) |
+|---|---|---|
+| Class declaration | `class [extends="..."] {` | `component [extends="..."] {` |
+| DI annotation | `@inject` + `property` | `property ... inject="...";` |
+
+### Extended Relationship Coverage
+
+```boxlang
+class extends="quick.models.BaseEntity" {
+    function posts() { return hasMany( "Post" ) }
+    function role() { return belongsTo( "Role" ) }
+    function profile() { return hasOne( "Profile" ) }
+    function teams() { return belongsToMany( "Team" ) }
+    function countryUsers() { return hasManyThrough( [ "Country", "State" ] ) }
+}
+```
+
+### CFML Parity Example
+
+```cfml
+component extends="quick.models.BaseEntity" {
+    function scopeActive( q ) {
+        return q.where( "isActive", true ).whereNull( "deletedAt" )
+    }
+}
+```
+
 ## Best Practices
 
 - **Always define `_fillable`** — prevents mass-assignment vulnerabilities from untrusted input

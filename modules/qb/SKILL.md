@@ -247,6 +247,45 @@ qb.from( "users" )
     } )
 ```
 
+## Legacy ORM Coverage (Merged from former `orm/qb`)
+
+### Language Mode Reference
+
+| Concept | BoxLang (`.bx`) | CFML (`.cfc`) |
+|---|---|---|
+| Class declaration | `class {}` | `component {}` |
+| DI annotation | `@inject` + `property` | `property ... inject="...";` |
+
+### Provider Injection Pattern
+
+```boxlang
+property name="qbProvider" inject="provider:QueryBuilder@qb";
+
+var qb = qbProvider.get()
+```
+
+### Subquery Join and Derived Columns
+
+```boxlang
+qb.from( "users" )
+    .joinSub( "recentOrders", function( q ) {
+        q.from( "orders" ).where( "createdAt", ">=", dateAdd( "d", -30, now() ) )
+    }, "users.id", "recentOrders.userId" )
+    .get()
+
+qb.from( "users" )
+    .addSubSelect( "orderCount", function( q ) {
+        q.from( "orders" ).whereColumn( "userId", "users.id" ).count()
+    } )
+    .get()
+```
+
+### Page Helper
+
+```boxlang
+qb.from( "users" ).forPage( page: 3, maxRows: 25 ).get()
+```
+
 ## Best Practices
 
 - **Use `where()` parameter binding** — qb always parameterizes values, preventing SQL injection
