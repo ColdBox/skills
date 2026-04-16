@@ -31,7 +31,6 @@ The [`.claude-plugin/plugin.json`](./.claude-plugin/plugin.json) registers these
 - `coldbox` — Core ColdBox framework skills
 - `testbox` — Comprehensive TestBox skills
 - `security` — Authentication, authorization, CSRF, SSO, passkeys
-- `orm` — QB, Quick ORM, CBORM, migrations
 - `wirebox` — WireBox dependency injection
 - `cachebox` — CacheBox standalone caching
 - `logbox` — LogBox logging
@@ -59,6 +58,7 @@ The [`.claude-plugin/plugin.json`](./.claude-plugin/plugin.json) registers these
 | [`request-context`](./coldbox/request-context/SKILL.md) | Request context, flash scope, collections, metadata |
 | [`flash-messaging`](./coldbox/flash-messaging/SKILL.md) | Flash RAM, message persistence, success/error/info/warning patterns |
 | [`cache-integration`](./coldbox/cache-integration/SKILL.md) | Event and view caching, cache keys, cache invalidation |
+| [`database-migrations`](./coldbox/database-migrations/SKILL.md) | Schema migrations with cfmigrations and CommandBox CLI: create, run, rollback, and seed |
 | [`async-programming`](./coldbox/async-programming/SKILL.md) | Async pipelines, ColdBox Futures, `allApply()/anyOf()`, thread-pool executors, AsyncManager |
 | [`scheduled-tasks`](./coldbox/scheduled-tasks/SKILL.md) | Scheduler.cfc, task frequencies, lifecycle hooks, module schedulers, clustered fixation |
 | [`decorators`](./coldbox/decorators/SKILL.md) | ControllerDecorator, RequestContextDecorator, extending framework internals |
@@ -109,15 +109,6 @@ The [`.claude-plugin/plugin.json`](./.claude-plugin/plugin.json) registers these
 | [`api-authentication`](./security/api-authentication/SKILL.md) | API keys, bearer auth, OAuth2 integration |
 | [`sso-integration`](./security/sso-integration/SKILL.md) | SAML, OIDC, OAuth2, social login patterns |
 | [`passkeys-integration`](./security/passkeys-integration/SKILL.md) | Passkeys, WebAuthn, FIDO2, module integration |
-
-### `orm` — Database and ORM Skills
-
-| Skill | What It Covers |
-|---|---|
-| [`qb`](./orm/qb/SKILL.md) | QB query builder, fluent where/join/orderBy/groupBy, aggregates, inserts/updates/deletes, raw expressions, sub-queries |
-| [`cborm`](./orm/cborm/SKILL.md) | BaseORMService, ActiveEntity, Criteria Builder, DetachedCriteria, ORM events, HQL queries |
-| [`quick-orm`](./orm/quick-orm/SKILL.md) | Quick Active Record entities, relationships, scopes, eager loading with `with()`, accessors/mutators |
-| [`database-migrations`](./orm/database-migrations/SKILL.md) | cfmigrations SchemaBuilder, create/alter/drop tables, indexes, foreign keys, seed data, rollbacks |
 
 ### `wirebox` — Dependency Injection Skills
 
@@ -201,10 +192,9 @@ The bundled [`.mcp.json`](./.mcp.json) includes Ortus documentation MCP endpoint
 
 | Path | Purpose |
 |---|---|
-| [`coldbox/`](./coldbox/) | Core ColdBox framework skills and testing patterns |
+| [`coldbox/`](./coldbox/) | Core ColdBox framework skills, testing patterns, and database migration workflows |
 | [`testbox/`](./testbox/) | Comprehensive TestBox skills (BDD, xUnit, MockBox, runners, reporters) |
 | [`security/`](./security/) | Authentication, authorization, CSRF, SSO, passkeys |
-| [`orm/`](./orm/) | QB, Quick ORM, CBORM, migrations |
 | [`wirebox/`](./wirebox/) | WireBox dependency injection |
 | [`cachebox/`](./cachebox/) | CacheBox standalone caching |
 | [`logbox/`](./logbox/) | LogBox logging |
@@ -273,12 +263,11 @@ The current [`.claude-plugin/plugin.json`](./.claude-plugin/plugin.json) registe
 - `coldbox`
 - `testbox`
 - `security`
-- `orm`
 - `wirebox`
 - `cachebox`
 - `logbox`
-
-The repository also contains a `docbox/` category with additional skills that are present in the repo but not currently listed in the plugin manifest.
+- `modules` — 40+ Ortus/ColdBox module skills
+- `docbox` — DocBox documentation generation
 
 ---
 
@@ -301,6 +290,7 @@ The repository also contains a `docbox/` category with additional skills that ar
 | [`request-context`](./coldbox/request-context/SKILL.md) | Request context, flash scope, collections, metadata |
 | [`flash-messaging`](./coldbox/flash-messaging/SKILL.md) | Flash RAM, message persistence, success/error/info/warning patterns |
 | [`cache-integration`](./coldbox/cache-integration/SKILL.md) | Event and view caching, cache keys, cache invalidation |
+| [`database-migrations`](./coldbox/database-migrations/SKILL.md) | Schema migrations with cfmigrations and CommandBox CLI: create, run, rollback, and seed |
 | [`coldbox-cli`](./coldbox/coldbox-cli/SKILL.md) | `coldbox create` workflows, app skeletons, language flags, scaffolding |
 | [`coldbox-documenter`](./coldbox/coldbox-documenter/SKILL.md) | Documentation standards for handlers, models, modules, config files |
 | [`coldbox-reviewer`](./coldbox/coldbox-reviewer/SKILL.md) | Code review heuristics for ColdBox applications and modules |
@@ -343,15 +333,6 @@ The repository also contains a `docbox/` category with additional skills that ar
 | [`sso-integration`](./security/sso-integration/SKILL.md) | SAML, OIDC, OAuth2, social login patterns |
 | [`passkeys-integration`](./security/passkeys-integration/SKILL.md) | Passkeys, WebAuthn, FIDO2, module integration |
 
-### `orm` — Database and ORM Skills
-
-| Skill | What It Covers |
-|---|---|
-| [`qb`](./orm/qb/SKILL.md) | QB query builder, fluent queries, joins, pagination |
-| [`cborm`](./orm/cborm/SKILL.md) | CBORM active record and Hibernate integration |
-| [`quick-orm`](./orm/quick-orm/SKILL.md) | Quick entities, relationships, scopes, eager loading |
-| [`database-migrations`](./orm/database-migrations/SKILL.md) | cfmigrations schema builder, migrations, seeders |
-
 ### `wirebox` — Dependency Injection Skills
 
 | Skill | What It Covers |
@@ -390,10 +371,9 @@ The bundled [`.mcp.json`](./.mcp.json) includes Ortus documentation MCP endpoint
 
 | Path | Purpose |
 |---|---|
-| [`coldbox/`](./coldbox/) | Core ColdBox framework skills |
+| [`coldbox/`](./coldbox/) | Core ColdBox framework skills and database migrations |
 | [`testbox/`](./testbox/) | Dedicated comprehensive TestBox skills |
 | [`security/`](./security/) | Authentication, authorization, CSRF, SSO, passkeys |
-| [`orm/`](./orm/) | QB, Quick ORM, CBORM, migrations |
 | [`wirebox/`](./wirebox/) | WireBox DI and AOP skills |
 | [`cachebox/`](./cachebox/) | CacheBox skills |
 | [`logbox/`](./logbox/) | LogBox skills |
