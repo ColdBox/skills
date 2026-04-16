@@ -229,6 +229,8 @@ class extends="quick.models.BaseEntity" {
 
 ### Extended Relationship Coverage
 
+Use `hasMany` for one-to-many, `belongsTo` for inverse ownership, `hasOne` for single child records, `belongsToMany` for pivot-table relations, and `hasManyThrough` for indirect relations through an intermediate entity.
+
 ```boxlang
 class extends="quick.models.BaseEntity" {
     function posts() { return hasMany( "Post" ) }

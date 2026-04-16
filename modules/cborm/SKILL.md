@@ -220,6 +220,8 @@ class extends="cborm.models.BaseORMService" {
 
 ### Application ORM Setup
 
+`cfclocation` is a legacy ORM setting key and remains required for engine compatibility.
+
 ```boxlang
 this.ormEnabled  = true
 this.ormSettings = {

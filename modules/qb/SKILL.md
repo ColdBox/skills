@@ -261,10 +261,12 @@ qb.from( "users" )
 ```boxlang
 property name="qbProvider" inject="provider:QueryBuilder@qb";
 
-var qb = qbProvider.get()
+var qb = qbProvider.get();
 ```
 
 ### Subquery Join and Derived Columns
+
+The `dateAdd( "d", -30, now() )` filter in the join subquery limits joined orders to the last 30 days.
 
 ```boxlang
 qb.from( "users" )
