@@ -58,7 +58,7 @@ The [`.claude-plugin/plugin.json`](./.claude-plugin/plugin.json) registers these
 | [`request-context`](./coldbox/request-context/SKILL.md) | Request context, flash scope, collections, metadata |
 | [`flash-messaging`](./coldbox/flash-messaging/SKILL.md) | Flash RAM, message persistence, success/error/info/warning patterns |
 | [`cache-integration`](./coldbox/cache-integration/SKILL.md) | Event and view caching, cache keys, cache invalidation |
-| [`database-migrations`](./coldbox/database-migrations/SKILL.md) | Consolidated cfmigrations + CommandBox migrations workflows: schema builder, migration files, CLI execution, rollback, and seeding |
+| [`database-migrations`](./coldbox/database-migrations/SKILL.md) | Schema migrations with cfmigrations and CommandBox CLI: create, run, rollback, and seed |
 | [`async-programming`](./coldbox/async-programming/SKILL.md) | Async pipelines, ColdBox Futures, `allApply()/anyOf()`, thread-pool executors, AsyncManager |
 | [`scheduled-tasks`](./coldbox/scheduled-tasks/SKILL.md) | Scheduler.cfc, task frequencies, lifecycle hooks, module schedulers, clustered fixation |
 | [`decorators`](./coldbox/decorators/SKILL.md) | ControllerDecorator, RequestContextDecorator, extending framework internals |
@@ -198,7 +198,7 @@ The bundled [`.mcp.json`](./.mcp.json) includes Ortus documentation MCP endpoint
 | [`wirebox/`](./wirebox/) | WireBox dependency injection |
 | [`cachebox/`](./cachebox/) | CacheBox standalone caching |
 | [`logbox/`](./logbox/) | LogBox logging |
-| [`modules/`](./modules/) | 40+ Ortus/ColdBox module skills (including cborm, qb, and quick) |
+| [`modules/`](./modules/) | 40+ Ortus/ColdBox module skills |
 | [`docbox/`](./docbox/) | DocBox documentation generation skills |
 
 ---
@@ -266,8 +266,8 @@ The current [`.claude-plugin/plugin.json`](./.claude-plugin/plugin.json) registe
 - `wirebox`
 - `cachebox`
 - `logbox`
-- `modules`
-- `docbox`
+- `modules` — 40+ Ortus/ColdBox module skills
+- `docbox` — DocBox documentation generation
 
 ---
 
@@ -290,7 +290,7 @@ The current [`.claude-plugin/plugin.json`](./.claude-plugin/plugin.json) registe
 | [`request-context`](./coldbox/request-context/SKILL.md) | Request context, flash scope, collections, metadata |
 | [`flash-messaging`](./coldbox/flash-messaging/SKILL.md) | Flash RAM, message persistence, success/error/info/warning patterns |
 | [`cache-integration`](./coldbox/cache-integration/SKILL.md) | Event and view caching, cache keys, cache invalidation |
-| [`database-migrations`](./coldbox/database-migrations/SKILL.md) | Consolidated cfmigrations + CommandBox migrations workflows: schema builder, migration files, CLI execution, rollback, and seeding |
+| [`database-migrations`](./coldbox/database-migrations/SKILL.md) | Schema migrations with cfmigrations and CommandBox CLI: create, run, rollback, and seed |
 | [`coldbox-cli`](./coldbox/coldbox-cli/SKILL.md) | `coldbox create` workflows, app skeletons, language flags, scaffolding |
 | [`coldbox-documenter`](./coldbox/coldbox-documenter/SKILL.md) | Documentation standards for handlers, models, modules, config files |
 | [`coldbox-reviewer`](./coldbox/coldbox-reviewer/SKILL.md) | Code review heuristics for ColdBox applications and modules |

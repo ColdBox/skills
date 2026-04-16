@@ -28,7 +28,7 @@ box install commandbox-migrations
 
 ### `config/ColdBox.cfc`
 
-```js
+```boxlang
 moduleSettings = {
     cfmigrations: {
         manager:             "cfmigrations.models.QBMigrationManager",
@@ -81,7 +81,7 @@ box migrate status
 
 ## Migration Shape
 
-```js
+```cfml
 component {
     function up( schema, query ) {
         schema.create( "users", ( table ) => {
@@ -101,7 +101,7 @@ component {
 
 ## Common Schema Operations
 
-```js
+```boxlang
 schema.create( "posts", ( table ) => {
     table.increments( "id" )
     table.unsignedInteger( "userId" )
@@ -127,7 +127,3 @@ schema.alter( "posts", ( table ) => {
 - Use env vars for credentials and avoid destructive commands in production
 - Use `box migrate up` (not reset/refresh) in production deployments
 
-## Related Module Skills
-
-- [`cfmigrations`](../../modules/cfmigrations/SKILL.md)
-- [`commandbox-migrations`](../../modules/commandbox-migrations/SKILL.md)
