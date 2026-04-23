@@ -4,6 +4,8 @@
 
 This repository is a [Claude Code plugin marketplace](https://code.claude.com/docs/en/plugin-marketplaces) that provides reusable skills for ColdBox and related tooling.
 
+**You can find all our skills published to our online directory at https://skills.boxlang.io/.**
+
 ---
 
 ## Install via Claude Code
