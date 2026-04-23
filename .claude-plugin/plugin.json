@@ -12,14 +12,14 @@
   "license": "Apache-2.0",
   "keywords": ["coldbox", "boxlang", "cfml", "wirebox", "cachebox", "logbox", "testbox", "ortus", "mvc", "rest"],
   "skills": [
-    "./coldbox/",
-    "./testbox/",
-    "./security/",
-    "./wirebox/",
     "./cachebox/",
+    "./coldbox/",
+    "./docbox/",
     "./logbox/",
     "./modules/",
-    "./docbox/"
+    "./security/",
+    "./testbox/",
+    "./wirebox/"
   ],
   "mcpServers": "./.mcp.json"
 }
