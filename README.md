@@ -22,6 +22,28 @@ claude plugin marketplace add ortus-boxlang/coldbox-skills
 claude plugin install coldbox-agent-skills@coldbox-skills
 ```
 
+## ColdBox CLI
+
+```bash
+# Install the ColdBox CLI if you haven't already
+box install coldbox-cli
+
+# Install AI integration into your app
+# This reads your app, box.json and installs skills based on your stack and preferences
+coldbox ai install
+
+# Skills Management
+
+# List installed skills
+coldbox ai skills list
+# Add a skill
+coldbox ai skills add Ortus-Solutions/skills/vuejs-expert
+# Remove a skill
+coldbox ai skills remove vuejs-expert
+```
+
+All skills are installed at `.agents/skills/` in your project.
+
 ---
 
 ## Manifest Coverage
