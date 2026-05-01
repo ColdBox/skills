@@ -1,9 +1,9 @@
 ---
-name: coldbox-testing-fixtures
+name: testing-fixtures
 description: "Use this skill when creating test fixtures, factory patterns, or test data builders in ColdBox/TestBox, setting up shared fixture files, creating user/model factories with overrides, using cbMockData for realistic fake data generation, or managing test data setup and teardown."
 ---
 
-# Testing Fixtures in ColdBox
+# Testing Fixtures
 
 ## Overview
 

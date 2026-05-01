@@ -1,9 +1,9 @@
 ---
-name: coldbox-testing-coverage
+name: testing-coverage
 description: "Use this skill when setting up code coverage analysis for ColdBox/ColdFusion/BoxLang applications, configuring coverage reporting, integrating coverage with CI pipelines, using TestBox coverage options, interpreting coverage metrics, or improving test coverage of untested code paths."
 ---
 
-# Code Coverage Testing in ColdBox
+# Code Coverage Testing
 
 ## Overview
 
