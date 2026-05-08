@@ -60,6 +60,8 @@ The [`.claude-plugin/plugin.json`](./.claude-plugin/plugin.json) registers these
 - `logbox` — LogBox logging
 - `modules` — 40+ Ortus/ColdBox module skills
 - `docbox` — DocBox documentation generation
+- `contentbox-cfml` — ContentBox CMS skills for CFML engines (Lucee, Adobe ColdFusion)
+- `contentbox-boxlang` — ContentBox CMS skills for BoxLang engine
 
 ---
 
@@ -204,6 +206,42 @@ The [`.claude-plugin/plugin.json`](./.claude-plugin/plugin.json) registers these
 | [`docbox-generation`](./docbox/docbox-generation/SKILL.md) | DocBox generation workflows, strategies, output formats |
 | [`docbox-annotations`](./docbox/docbox-annotations/SKILL.md) | DocBox annotations and documentation comment patterns |
 
+### `contentbox-cfml` — ContentBox CMS Skills (CFML)
+
+Professional skills for building with [ContentBox CMS](https://contentbox.ortusbooks.com/) on CFML engines (Lucee 5+, Adobe ColdFusion 2018+).
+
+| Skill | What It Covers |
+|---|---|
+| [`overview`](./contentbox-cfml/overview/SKILL.md) | ContentBox architecture, core services, CBHelper, commands, engine compatibility |
+| [`theme-development`](./contentbox-cfml/theme-development/SKILL.md) | Theme structure, Theme.cfc, settings, layouts, views, collection templates, CBHelper |
+| [`widget-development`](./contentbox-cfml/widget-development/SKILL.md) | BaseWidget, renderIt(), DI services, admin editor annotations, widget locations |
+| [`module-development`](./contentbox-cfml/module-development/SKILL.md) | ModuleConfig.cfc, admin modules, interceptors, migrations, ORM entities, dependencies |
+| [`admin-extension`](./contentbox-cfml/admin-extension/SKILL.md) | Admin interception points, layout injection, content editor hooks, lifecycle events, menu registration |
+| [`two-factor-authentication`](./contentbox-cfml/two-factor-authentication/SKILL.md) | ITwoFactorProvider interface, TwoFactorService, custom providers, trusted devices, enforcement |
+| [`api-headless`](./contentbox-cfml/api-headless/SKILL.md) | REST API v1, JWT auth, CRUD endpoints, custom API handlers, headless frontend integration |
+| [`security-permissions`](./contentbox-cfml/security-permissions/SKILL.md) | cbSecurity RBAC, Author/Role/Permission entities, security rules, rate limiting, CSRF |
+| [`multi-site`](./contentbox-cfml/multi-site/SKILL.md) | Site entity, SiteService, domain resolution, site-specific content/themes/settings/menus |
+| [`media-management`](./contentbox-cfml/media-management/SKILL.md) | Media manager, file uploads, image sizing, media delivery, cbfs storage |
+| [`content-types`](./contentbox-cfml/content-types/SKILL.md) | Entry/Page/ContentStore entities, custom fields, content helpers/mixins, renderers, lifecycle |
+
+### `contentbox-boxlang` — ContentBox CMS Skills (BoxLang)
+
+Professional skills for building with [ContentBox CMS](https://contentbox.ortusbooks.com/) on the BoxLang engine.
+
+| Skill | What It Covers |
+|---|---|
+| [`overview`](./contentbox-boxlang/overview/SKILL.md) | ContentBox architecture, core services, CBHelper, commands, engine compatibility |
+| [`theme-development`](./contentbox-boxlang/theme-development/SKILL.md) | Theme structure, Theme.bx, settings, layouts, views, collection templates, CBHelper |
+| [`widget-development`](./contentbox-boxlang/widget-development/SKILL.md) | BaseWidget, renderIt(), DI services, admin editor annotations, widget locations |
+| [`module-development`](./contentbox-boxlang/module-development/SKILL.md) | ModuleConfig.bx, admin modules, interceptors, migrations, ORM entities, dependencies |
+| [`admin-extension`](./contentbox-boxlang/admin-extension/SKILL.md) | Admin interception points, layout injection, content editor hooks, lifecycle events, menu registration |
+| [`two-factor-authentication`](./contentbox-boxlang/two-factor-authentication/SKILL.md) | ITwoFactorProvider interface, TwoFactorService, custom providers, trusted devices, enforcement |
+| [`api-headless`](./contentbox-boxlang/api-headless/SKILL.md) | REST API v1, JWT auth, CRUD endpoints, custom API handlers, headless frontend integration |
+| [`security-permissions`](./contentbox-boxlang/security-permissions/SKILL.md) | cbSecurity RBAC, Author/Role/Permission entities, security rules, rate limiting, CSRF |
+| [`multi-site`](./contentbox-boxlang/multi-site/SKILL.md) | Site entity, SiteService, domain resolution, site-specific content/themes/settings/menus |
+| [`media-management`](./contentbox-boxlang/media-management/SKILL.md) | Media manager, file uploads, image sizing, media delivery, cbfs storage |
+| [`content-types`](./contentbox-boxlang/content-types/SKILL.md) | Entry/Page/ContentStore entities, custom fields, content helpers/mixins, renderers, lifecycle |
+
 ---
 
 ## MCP Servers
@@ -224,6 +262,8 @@ The bundled [`.mcp.json`](./.mcp.json) includes Ortus documentation MCP endpoint
 | [`logbox/`](./logbox/) | LogBox logging |
 | [`modules/`](./modules/) | 40+ Ortus/ColdBox module skills |
 | [`docbox/`](./docbox/) | DocBox documentation generation skills |
+| [`contentbox-cfml/`](./contentbox-cfml/) | ContentBox CMS skills for CFML engines (Lucee, Adobe ColdFusion) |
+| [`contentbox-boxlang/`](./contentbox-boxlang/) | ContentBox CMS skills for BoxLang engine |
 
 ---
 
@@ -234,5 +274,6 @@ The bundled [`.mcp.json`](./.mcp.json) includes Ortus documentation MCP endpoint
 - [WireBox Documentation](https://wirebox.ortusbooks.com/)
 - [CacheBox Documentation](https://cachebox.ortusbooks.com/)
 - [LogBox Documentation](https://logbox.ortusbooks.com/)
+- [ContentBox Documentation](https://contentbox.ortusbooks.com/)
 - [BoxLang Documentation](https://boxlang.ortusbooks.com/)
 - [Ortus Solutions](https://www.ortussolutions.com/)
