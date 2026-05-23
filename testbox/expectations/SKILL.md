@@ -1,6 +1,7 @@
 ---
 name: testbox-expectations
 description: "Use this skill when writing fluent expectations in TestBox using expect(), expectAll(), all built-in matchers (toBe, toBeTrue, toBeArray, toHaveKey, toThrow, toMatch, toBeBetween, toBeCloseTo, toInclude, etc.), the not operator (notToBe, notToBeEmpty, etc.), chaining multiple matchers on one expect(), creating custom matchers with addMatchers(), or using expectAll() over collections."
+applyTo: "**/tests/**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
 # TestBox Expectations — Fluent Assertion DSL

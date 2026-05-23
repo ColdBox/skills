@@ -1,6 +1,7 @@
 ---
 name: coldbox-security-rbac
 description: "Use this skill when implementing Role-Based Access Control (RBAC) in ColdBox, creating role and permission management services, building hierarchical role structures, assigning roles and permissions to users, checking permissions in handlers with cbsecurity, or when designing a group-based access control system."
+applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
 # RBAC Patterns in ColdBox

@@ -1,3 +1,9 @@
+---
+name: contentbox-cfml-widget-development
+description: "Use this skill when building ContentBox widgets, including BaseWidget patterns, render logic, dependency injection, editor metadata annotations, caching choices, and safe output/rendering practices."
+applyTo: "**/*.{cfc,cfm,cfml}"
+---
+
 # ContentBox Widget Development (CFML)
 
 Build custom widgets for ContentBox CMS using CFML. Widgets are reusable, self-contained components that render dynamic content anywhere in pages, entries, sidebars, or layouts.

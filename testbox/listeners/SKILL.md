@@ -1,6 +1,7 @@
 ---
 name: testbox-listeners
 description: "Use this skill when implementing TestBox run listeners (callbacks): onBundleStart, onBundleEnd, onSuiteStart, onSuiteEnd, onSpecStart, onSpecEnd; building progress indicators, custom loggers, or live dashboards that react to test lifecycle events; or passing listener callbacks to TestBox's run(), runRaw(), or the standalone runner."
+applyTo: "**/tests/**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
 # TestBox Run Listeners — Comprehensive Reference

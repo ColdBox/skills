@@ -1,6 +1,7 @@
 ---
 name: coldbox-security-authentication
 description: "Use this skill when implementing user authentication in ColdBox with CBAuth, creating user services with retrieveUserById/retrieveUserByUsername, hashing passwords with BCrypt, managing login/logout sessions, implementing remember me functionality, or setting up the CBAuth module configuration."
+applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
 # Authentication Patterns in ColdBox

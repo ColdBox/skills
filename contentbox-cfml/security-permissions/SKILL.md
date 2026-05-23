@@ -1,3 +1,9 @@
+---
+name: contentbox-cfml-security-permissions
+description: "Use this skill when implementing ContentBox security and permissions, including roles, permission modeling, cbSecurity integration, authorization checks, CSRF/rate-limiting protections, and hardening patterns."
+applyTo: "**/*.{cfc,cfm,cfml}"
+---
+
 # ContentBox Security & Permissions (CFML)
 
 Manage authentication, authorization, roles, permissions, and security rules in ContentBox CMS using CFML.

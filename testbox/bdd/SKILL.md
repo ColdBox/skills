@@ -1,6 +1,7 @@
 ---
 name: testbox-bdd
 description: "Use this skill when writing BDD-style tests with TestBox using describe/it blocks, feature/story/scenario/given/when/then Gherkin-style suites, lifecycle hooks (beforeAll/afterAll/beforeEach/afterEach/aroundEach), focused specs (fit/fdescribe), skipping specs (xit/xdescribe/skip()), spec data binding, asyncAll parallel specs, nested suite trees, labels, or organizing tests around behavior descriptions."
+applyTo: "**/tests/**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
 # BDD Testing with TestBox

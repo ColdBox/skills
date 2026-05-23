@@ -1,6 +1,7 @@
 ---
 name: coldbox-testing-base-classes
 description: "Use this skill to understand which ColdBox testing base class to extend for a given test type, configure test bundle annotations (appMapping, configMapping, unloadColdBox, loadColdBox, coldboxAppKey), set up the tests/ harness (Application.cfc, folder structure), or choose between integration testing (BaseTestCase), isolated handler testing (BaseHandlerTest), model unit testing (BaseModelTest), and interceptor unit testing (BaseInterceptorTest)."
+applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
 # ColdBox Testing Base Classes

@@ -1,6 +1,7 @@
 ---
 name: testbox-mockbox
 description: "Use this skill when creating mocks, stubs, and spies in TestBox using MockBox: createMock(), createEmptyMock(), prepareMock(), stubbing methods with $(), chaining $args()/$results()/$throws(), verifying call counts with $once()/$never()/$times()/$atLeast()/$atMost(), reading call logs with $callLog(), injecting mock properties with $property(), simulating queries with querySim(), or spying on real methods with $spy()."
+applyTo: "**/tests/**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
 # MockBox — Mocking & Stubbing in TestBox

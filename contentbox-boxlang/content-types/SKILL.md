@@ -1,3 +1,9 @@
+---
+name: contentbox-boxlang-content-types
+description: "Use this skill when implementing ContentBox content models and rendering flows, including entries/pages/content stores, custom fields, entity relationships, lifecycle callbacks, and content-type specific behaviors."
+applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
+---
+
 # ContentBox Content Types & Custom Fields (BoxLang)
 
 Extend ContentBox content types and add custom fields using BoxLang. ContentBox supports entries, pages, and ContentStore items with extensible custom field capabilities.

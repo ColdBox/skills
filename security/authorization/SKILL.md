@@ -1,6 +1,7 @@
 ---
 name: coldbox-security-authorization
 description: "Use this skill when implementing authorization in ColdBox with CBSecurity, defining security rules for events and URLs, checking user roles with cbsecurity.has(), checking permissions with cbsecurity.can(), implementing role-based route protection, using @secured annotations on handler actions, or blocking unauthorized access."
+applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
 # Authorization Patterns in ColdBox

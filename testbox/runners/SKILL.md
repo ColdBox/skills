@@ -1,6 +1,7 @@
 ---
 name: testbox-runners
 description: "Use this skill when running TestBox tests: CommandBox CLI (testbox run), BoxLang CLI (./testbox/run), HTML web runner, programmatic TestBox instantiation (run/runRaw/runRemote), configuring test directories or bundles, using the streaming runner (--stream flag / StreamingRunner), watcher mode, all CLI flags (--show-failed-only, --dry-run, --slow-threshold-ms, --stacktrace, --max-failures), or setting up box.json testbox configuration."
+applyTo: "**/tests/**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
 # TestBox Runners — Comprehensive Reference

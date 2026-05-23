@@ -1,6 +1,7 @@
 ---
 name: testing-coverage
 description: "Use this skill when setting up code coverage analysis for ColdBox/ColdFusion/BoxLang applications, configuring coverage reporting, integrating coverage with CI pipelines, using TestBox coverage options, interpreting coverage metrics, or improving test coverage of untested code paths."
+applyTo: "**/tests/**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
 # Code Coverage Testing

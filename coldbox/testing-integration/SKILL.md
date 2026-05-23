@@ -1,6 +1,7 @@
 ---
 name: coldbox-testing-integration
 description: "Use this skill when writing integration tests for ColdBox that use real dependencies (database, WireBox, ColdBox context), testing full request/response cycles with execute(), setting up and tearing down test databases, testing services with real data, or using BaseTestCase for end-to-end handler tests with actual WireBox injections."
+applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
 # Integration Testing in ColdBox

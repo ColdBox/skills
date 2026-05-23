@@ -1,6 +1,7 @@
 ---
 name: coldbox-security-jwt
 description: "Use this skill when implementing JWT (JSON Web Token) authentication in ColdBox REST APIs with CBSecurity, generating access/refresh tokens, validating bearer tokens, configuring JWT settings and secret keys, implementing token refresh endpoints, or securing API routes with JWT authentication middleware."
+applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
 # JWT Development in ColdBox

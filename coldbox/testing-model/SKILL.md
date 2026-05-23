@@ -1,6 +1,7 @@
 ---
 name: coldbox-testing-model
 description: "Use this skill when unit testing ColdBox model objects (services, repositories, entities, or utility classes) in isolation using BaseModelTest, accessing the pre-wired model variable, leveraging the built-in mock helpers (mockLogger, mockLogBox, mockCacheBox, mockWireBox), calling model.init() to initialize the component, mocking injected properties with prepareMock(), or scaffolding model tests with CommandBox."
+applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
 # Model / Service Unit Testing in ColdBox

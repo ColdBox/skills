@@ -1,6 +1,7 @@
 ---
 name: coldbox-routing-development
 description: "Use this skill when configuring ColdBox routes, setting up RESTful resource routes, creating route groups, implementing URL pattern matching with constraints, defining named routes, or working with Router.cfc in a ColdBox application."
+applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
 # Routing Development

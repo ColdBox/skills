@@ -1,6 +1,7 @@
 ---
 name: coldbox-security-implementation
 description: "Use this skill when setting up the full CBSecurity framework in ColdBox, configuring the security firewall, creating authentication services, implementing security event handlers, configuring security rules and validators, or building a complete security layer for a ColdBox application."
+applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
 # CBSecurity Implementation in ColdBox

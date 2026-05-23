@@ -1,6 +1,7 @@
 ---
 name: coldbox-testing-http-methods
 description: "Use this skill when simulating HTTP requests in ColdBox tests using the get(), post(), put(), patch(), delete(), or request() methods, setting request headers (Authorization, Accept, Content-Type), sending JSON request bodies, asserting response status with toHaveStatus(), checking validation errors with toHaveInvalidData(), or understanding the difference between execute() (event-based) and the HTTP method helpers (route/URL-based)."
+applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
 # HTTP Method Testing in ColdBox

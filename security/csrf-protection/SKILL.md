@@ -1,6 +1,7 @@
 ---
 name: coldbox-security-csrf
 description: "Use this skill when implementing CSRF (Cross-Site Request Forgery) protection in ColdBox forms, using cbcsrf to generate and validate tokens, adding csrf() tokens to HTML forms, validating tokens in POST/PUT/DELETE handlers, configuring the cbcsrf module, or excluding API routes from CSRF verification."
+applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
 # CSRF Protection in ColdBox

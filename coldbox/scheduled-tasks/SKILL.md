@@ -1,6 +1,7 @@
 ---
 name: coldbox-scheduled-tasks
 description: "Use this skill when creating ColdBox scheduled tasks, building Scheduler.cfc files, registering task frequencies, managing task life-cycles (before/after/onFailure/onSuccess), using server fixation for clustered apps, or configuring module schedulers."
+applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
 # Scheduled Tasks

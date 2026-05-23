@@ -1,3 +1,9 @@
+---
+name: contentbox-cfml-two-factor-authentication
+description: "Use this skill when implementing or customizing ContentBox two-factor authentication providers, trusted device flows, enrollment/verification UX, enforcement policies, and provider lifecycle handling."
+applyTo: "**/*.{cfc,cfm,cfml}"
+---
+
 # ContentBox Two-Factor Authentication (CFML)
 
 Implement and extend two-factor authentication (2FA) in ContentBox CMS using CFML. ContentBox provides a pluggable 2FA system with provider interfaces, trusted device support, and global enforcement.

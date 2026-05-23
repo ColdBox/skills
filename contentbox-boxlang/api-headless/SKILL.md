@@ -1,3 +1,9 @@
+---
+name: contentbox-boxlang-api-headless
+description: "Use this skill when implementing headless ContentBox APIs, including REST endpoint design, JWT authentication flows, content CRUD, custom API handlers, and integration patterns for decoupled frontends."
+applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
+---
+
 # ContentBox API & Headless Development (BoxLang)
 
 Build headless and REST API integrations with ContentBox CMS using BoxLang. ContentBox provides a full REST API (v1) for managing all content types, enabling headless CMS architectures.

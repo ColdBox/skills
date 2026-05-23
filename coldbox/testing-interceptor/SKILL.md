@@ -1,6 +1,7 @@
 ---
 name: coldbox-testing-interceptor
 description: "Use this skill when unit testing ColdBox interceptors in isolation using BaseInterceptorTest, accessing the pre-wired interceptor variable, leveraging mock helpers (mockController, mockRequestService, mockLogger, mockLogBox, mockFlash), configuring interceptor properties with configProperties, calling interceptor announce points directly, or scaffolding interceptor tests with CommandBox."
+applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
 # Interceptor Unit Testing in ColdBox
