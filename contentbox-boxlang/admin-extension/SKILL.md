@@ -1,3 +1,9 @@
+---
+name: contentbox-boxlang-admin-extension
+description: "Use this skill when extending the ContentBox admin UI with custom menus, views, interception points, editor integrations, workflows, and secure admin-only module behaviors."
+applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
+---
+
 # ContentBox Admin Extension (BoxLang)
 
 Extend the ContentBox admin interface using BoxLang. Add custom panels, modify existing screens, inject HTML into admin layouts, hook into content lifecycle events, and register new admin functionality.

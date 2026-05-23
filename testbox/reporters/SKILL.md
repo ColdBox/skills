@@ -1,6 +1,7 @@
 ---
 name: testbox-reporters
 description: "Use this skill when selecting or configuring TestBox reporters: ANTJunit, Console, Doc, JSON, JUnit, Min, MinText, Simple, Text, XML, Streaming; setting reporter options (hideSkipped, editor links for Simple reporter); or creating a custom reporter by implementing the IReporter interface."
+applyTo: "**/tests/**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
 # TestBox Reporters — Comprehensive Reference

@@ -1,6 +1,7 @@
 ---
 name: docbox-annotations
 description: "Use this skill when writing JavaDoc-style DocBox comments on BoxLang or CFML classes, properties, functions, and arguments; adding @author/@version/@since/@return/@throws/@deprecated block tags; using @doc.type for generic array/struct types; or preparing source code for API documentation generation with DocBox."
+applyTo: "**/*.{bx,bxm,cfc,cfm,cfml,md}"
 ---
 
 # DocBox Annotations

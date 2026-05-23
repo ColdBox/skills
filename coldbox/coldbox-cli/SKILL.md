@@ -1,6 +1,7 @@
 ---
 name: coldbox-cli
 description: "Use this skill when using the ColdBox CLI (CommandBox module) to scaffold applications, generate handlers, models, services, views, layouts, interceptors, modules, ORM artifacts, tests, or manage AI integration. Covers all `coldbox create` commands, language flags (BoxLang vs CFML), app skeleton selection, feature flags (--docker, --vite, --rest, --migrations, --ai), template token patterns, layout detection, and AI integration sub-commands."
+applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
 # ColdBox CLI Skill

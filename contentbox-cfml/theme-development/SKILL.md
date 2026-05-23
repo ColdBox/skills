@@ -1,3 +1,9 @@
+---
+name: contentbox-cfml-theme-development
+description: "Use this skill when creating or customizing ContentBox themes, including theme structure, metadata/settings, layout and view composition, collection templates, widget overrides, and theme lifecycle callbacks."
+applyTo: "**/*.{cfc,cfm,cfml}"
+---
+
 # ContentBox Theme Development (CFML)
 
 Build custom themes for ContentBox CMS using CFML. Themes control the visual presentation of all public-facing content — blog entries, pages, archives, search results, and error pages.

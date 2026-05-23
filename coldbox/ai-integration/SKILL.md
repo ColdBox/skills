@@ -1,6 +1,7 @@
 ---
 name: coldbox-ai-integration
 description: "Use this skill when integrating AI capabilities into a ColdBox application using the BoxLang AI library (bx-ai module) -- including simple chat, streaming, pipelines, agents, RAG with vector memory, document loading, tool calling, and injecting the AI service into handlers or models."
+applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
 # AI Integration (BoxLang AI / bx-ai)

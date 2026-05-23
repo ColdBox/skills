@@ -1,3 +1,9 @@
+---
+name: contentbox-cfml-content-types
+description: "Use this skill when implementing ContentBox content models and rendering flows, including entries/pages/content stores, custom fields, entity relationships, lifecycle callbacks, and content-type specific behaviors."
+applyTo: "**/*.{cfc,cfm,cfml}"
+---
+
 # ContentBox Content Types & Custom Fields (CFML)
 
 Extend ContentBox content types and add custom fields using CFML. ContentBox supports entries, pages, and ContentStore items with extensible custom field capabilities.

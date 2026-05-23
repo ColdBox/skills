@@ -1,6 +1,7 @@
 ---
 name: coldbox-security-api-authentication
 description: "Use this skill when implementing API key authentication in ColdBox REST APIs, generating and validating API keys, caching API key lookups with CacheBox, implementing bearer token middleware, managing API key scopes and revocation, or adding an API key interceptor to protect REST endpoints."
+applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
 # API Key Authentication in ColdBox

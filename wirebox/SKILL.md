@@ -1,6 +1,7 @@
 ---
 name: wirebox-di
 description: "Use this skill when working with WireBox dependency injection -- bootstrapping the injector, configuring binders, creating object mappings, using the injection DSL, setting persistence scopes, applying providers to avoid scope-widening, lazy properties, property observers, object delegation, virtual inheritance, child injectors, the object populator, or WireBox event listeners. Applies to both standalone and ColdBox-integrated usage."
+applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
 # WireBox — Dependency Injection

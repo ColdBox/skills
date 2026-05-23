@@ -1,6 +1,7 @@
 ---
 name: testbox-unit-xunit
 description: "Use this skill when writing xUnit-style tests in TestBox using test functions (testXxx()), setup/teardown lifecycle (beforeTests/afterTests/setup/teardown), $assert assertion object, or the Arrange-Act-Assert (AAA) pattern for unit testing services, models, and utilities in isolation."
+applyTo: "**/tests/**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
 # xUnit / Unit Testing with TestBox

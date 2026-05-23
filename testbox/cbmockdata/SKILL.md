@@ -1,6 +1,7 @@
 ---
 name: testbox-cbmockdata
 description: "Use this skill when generating realistic fake/mock data in tests using cbMockData (WireBox ID: MockData@cbMockData): age, boolean, date, datetime, email, fname, lname, name, num, sentence, ssn, string, tel, uuid, url, words, lorem, baconlorem, imageurl, ipaddress, autoincrement, oneof, rnd/rand; generating arrays of objects, nested objects, arrays of values, or using custom supplier closures."
+applyTo: "**/tests/**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
 # cbMockData — Test Data Generation Reference

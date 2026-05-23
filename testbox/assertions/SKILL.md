@@ -1,6 +1,7 @@
 ---
 name: testbox-assertions
 description: "Use this skill when using the TestBox $assert object for xUnit-style assertions: isTrue, isEqual, includes, isEmpty, key, instanceOf, throws, between, closeTo, lengthOf, match, null, typeOf, and others; registering custom assertion functions with addAssertions(); or using BoxLang dynamic assertion methods (assertIsTrue, assertBetween, etc.)."
+applyTo: "**/tests/**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
 # TestBox Assertions — `$assert` Reference

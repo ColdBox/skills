@@ -1,3 +1,9 @@
+---
+name: contentbox-boxlang-multi-site
+description: "Use this skill when implementing or maintaining ContentBox multi-site setups, including domain/site resolution, site-specific content and themes, settings isolation, menu behavior, and operational best practices."
+applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
+---
+
 # ContentBox Multi-Site Management (BoxLang)
 
 Build and manage multi-site installations in ContentBox CMS using BoxLang. ContentBox supports running multiple sites from a single installation with shared or isolated content, themes, and settings.

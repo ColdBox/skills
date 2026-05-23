@@ -1,3 +1,9 @@
+---
+name: contentbox-boxlang-media-management
+description: "Use this skill when implementing ContentBox media workflows, including uploads, storage abstraction with cbfs, image handling/resizing, media delivery patterns, and governance/security controls for assets."
+applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
+---
+
 # ContentBox Media Management (BoxLang)
 
 Work with the ContentBox media manager using BoxLang. Handle file uploads, image processing, media library organization, and media delivery.

@@ -1,6 +1,7 @@
 ---
 name: coldbox-security-passkeys
 description: "Use this skill when implementing passkeys (WebAuthn/FIDO2) passwordless authentication in ColdBox with cbsecurity-passkeys, configuring relying party settings, building passkey registration and authentication flows, managing passkey device storage, or adding biometric and hardware security key login support."
+applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
 # Passkeys (WebAuthn/FIDO2) in ColdBox

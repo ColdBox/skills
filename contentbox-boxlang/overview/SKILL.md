@@ -1,3 +1,9 @@
+---
+name: contentbox-boxlang-overview
+description: "Use this skill when understanding ContentBox architecture, core modules, service layer, multi-site behavior, security foundations, and the recommended extension points for building or maintaining ContentBox solutions."
+applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
+---
+
 # ContentBox CMS Overview (BoxLang)
 
 ContentBox is a professional open-source hybrid modular CMS (Content Management System) built on ColdBox. It supports both traditional CMS and headless architectures, running on CFML engines (Lucee, Adobe ColdFusion) and BoxLang.

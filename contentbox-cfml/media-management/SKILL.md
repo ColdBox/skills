@@ -1,3 +1,9 @@
+---
+name: contentbox-cfml-media-management
+description: "Use this skill when implementing ContentBox media workflows, including uploads, storage abstraction with cbfs, image handling/resizing, media delivery patterns, and governance/security controls for assets."
+applyTo: "**/*.{cfc,cfm,cfml}"
+---
+
 # ContentBox Media Management (CFML)
 
 Work with the ContentBox media manager using CFML. Handle file uploads, image processing, media library organization, and media delivery.

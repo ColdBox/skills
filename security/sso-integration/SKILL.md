@@ -1,6 +1,7 @@
 ---
 name: coldbox-security-sso
 description: "Use this skill when implementing Single Sign-On (SSO) in ColdBox with the cbsso module, configuring OAuth2 providers like Google, Azure AD, or Okta, handling OAuth2 callback flows, mapping SSO identity to local user accounts, or implementing social login buttons with OpenID Connect."
+applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
 # SSO Integration in ColdBox

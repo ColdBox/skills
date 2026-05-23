@@ -1,6 +1,7 @@
 ---
 name: coldbox-flash-messaging
 description: "Use this skill when implementing flash RAM messaging in ColdBox, using cbMessageBox for styled notifications, building POST-REDIRECT-GET patterns, persisting messages across redirects, showing success/error/warning/info alerts, or integrating flash with form validation."
+applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
 # Flash Messaging

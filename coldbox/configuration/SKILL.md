@@ -1,6 +1,7 @@
 ---
 name: coldbox-configuration
 description: "Use this skill when configuring a ColdBox application in ColdBox.cfc, setting up environments, managing module settings, defining datasources, configuring logging with LogBox, setting up caching with CacheBox, or wiring dependencies with WireBox settings."
+applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
 # ColdBox Configuration

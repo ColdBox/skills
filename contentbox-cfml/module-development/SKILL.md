@@ -1,3 +1,9 @@
+---
+name: contentbox-cfml-module-development
+description: "Use this skill when building ContentBox modules, including ModuleConfig conventions, admin integration, interceptors, routes, migrations, ORM entities, dependency registration, and module lifecycle hooks."
+applyTo: "**/*.{cfc,cfm,cfml}"
+---
+
 # ContentBox Module Development (CFML)
 
 Build custom modules for ContentBox CMS using CFML. Modules are ColdBox modules that extend ContentBox functionality — adding new admin panels, API endpoints, widgets, interceptors, or content features.

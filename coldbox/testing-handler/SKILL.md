@@ -1,6 +1,7 @@
 ---
 name: coldbox-testing-handler
 description: "Use this skill when testing ColdBox event handlers with execute(), asserting rc/prc collections, verifying view selection and rendered output, mocking relocations, testing renderData() and getHandlerResults(), setting HTTP methods and headers, injecting mocks into handlers, or using BaseHandlerTest for isolated handler unit tests."
+applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
 # Handler Testing in ColdBox

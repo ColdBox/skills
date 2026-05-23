@@ -1,3 +1,9 @@
+---
+name: contentbox-boxlang-security-permissions
+description: "Use this skill when implementing ContentBox security and permissions, including roles, permission modeling, cbSecurity integration, authorization checks, CSRF/rate-limiting protections, and hardening patterns."
+applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
+---
+
 # ContentBox Security & Permissions (BoxLang)
 
 Manage authentication, authorization, roles, permissions, and security rules in ContentBox CMS using BoxLang.

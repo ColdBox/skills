@@ -1,3 +1,9 @@
+---
+name: contentbox-cfml-api-headless
+description: "Use this skill when implementing headless ContentBox APIs, including REST endpoint design, JWT authentication flows, content CRUD, custom API handlers, and integration patterns for decoupled frontends."
+applyTo: "**/*.{cfc,cfm,cfml}"
+---
+
 # ContentBox API & Headless Development (CFML)
 
 Build headless and REST API integrations with ContentBox CMS using CFML. ContentBox provides a full REST API (v1) for managing all content types, enabling headless CMS architectures.
