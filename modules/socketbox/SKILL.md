@@ -1,21 +1,21 @@
 ---
 name: socketbox
 description: >
-  Use this skill when building real-time WebSocket applications in ColdBox/BoxLang using socketbox.
-  Covers event handler setup, onConnect/onDisconnect/onMessage hooks, broadcasting to rooms,
-  client-side JavaScript integration, and production patterns for live notifications and chat.
+  Use this skill when building WebSocket features with SocketBox in ColdBox/CFML/BoxLang.
+  Covers the real SocketBox APIs for core WebSocket handling and STOMP broker usage,
+  including correct base classes, method signatures, server-side sends, and client examples.
 applyTo: "**/*.{bx,cfc,cfm,bxm}"
 ---
 
-# Socketbox Skill
+# SocketBox Skill
 
 ## When to Use This Skill
 
 Load this skill when:
-- Building real-time features (live notifications, chat, dashboards) with WebSockets
-- Handling WebSocket connect, disconnect, and message events in ColdBox
-- Broadcasting messages to named rooms or individual clients
-- Integrating the WebSocket server with existing ColdBox services
+- Building WebSocket features in CommandBox or BoxLang MiniServer
+- Implementing a `/WebSocket.cfc` listener for connect/close/message lifecycle hooks
+- Sending messages to one client or all clients with core WebSocket support
+- Using STOMP semantics (destinations, subscriptions, exchanges, auth) when needed
 
 ## Installation
 
@@ -25,193 +25,200 @@ box install socketbox
 
 ## Configuration
 
-### config/modules/socketbox.cfc
+SocketBox is driven by web server settings (CommandBox) and the listener class path.
+
+### CommandBox settings
+
+- `web.websocket.enable` (global) or `sites.mySite.websocket.enable` (per-site)
+- `web.websocket.uri` or `sites.mySite.websocket.uri` (default `/ws`)
+- `web.websocket.listener` or `sites.mySite.websocket.listener` (default `/WebSocket.cfc`)
+
+### Listener class
+
+Create `/WebSocket.cfc` (or `.bx`) in your web root and extend one of:
+
+- `modules.socketbox.models.WebSocketCore`
+- `modules.socketbox.models.WebSocketSTOMP`
+
+## Core WebSocket Mode
+
+Use this for low-level WebSocket support with plain string messages.
+
+### Base class
 
 ```js
-function configure() {
-    return {
-        // Port for the WebSocket server
-        port         : 8080,
-
-        // SSL (set to true in production with a valid certificate)
-        ssl          : false,
-        sslCert      : "",
-        sslKey       : "",
-
-        // Ping/pong heartbeat interval (ms)
-        pingInterval : 30000,
-
-        // Max message size (bytes)
-        maxPayloadSize: 65536
-    }
+component extends="modules.socketbox.models.WebSocketCore" {
 }
 ```
 
-## Creating a WebSocket Event Handler
+### Lifecycle hooks (override these)
+
+- `onConnect( required channel )`
+- `onClose( required channel )`
+- `onMessage( required message, required channel )`
+
+### Core inherited methods
+
+- `sendMessage( required message, required channel, timeoutMS=0 )`
+- `broadcastMessage( required message )`
+- `getAllConnections()`
+
+### Core example
 
 ```js
-// websockets/ChatHandler.bx
-class extends="socketbox.models.BaseEventHandler" {
+component extends="modules.socketbox.models.WebSocketCore" {
 
-    property name="log" inject="logbox:logger:{this}";
-
-    // Fires when a client connects
-    void function onConnect( socket, event ) {
-        log.info( "Client connected: #socket.getId()#" )
-
-        // Send a welcome message to just this client
-        socket.send( serializeJSON( {
-            type    : "connected",
-            message : "Welcome to the chat!"
-        } ) )
+    function onConnect( required channel ) {
+        sendMessage( "Connected", arguments.channel );
     }
 
-    // Fires when a client disconnects
-    void function onDisconnect( socket, event ) {
-        log.info( "Client disconnected: #socket.getId()#" )
-
-        // Notify the room
-        broadcast(
-            room    = socket.getRoom(),
-            message = serializeJSON( { type: "left", socketId: socket.getId() } ),
-            exclude = socket.getId()
-        )
+    function onClose( required channel ) {
+        // Optional cleanup for disconnected clients
     }
 
-    // Fires when a message is received from a client
-    void function onMessage( socket, message, event ) {
-        var payload = deserializeJSON( message )
-
-        switch ( payload.type ) {
-            case "join":
-                socket.joinRoom( payload.room )
-                broadcast(
-                    room    = payload.room,
-                    message = serializeJSON( { type: "joined", room: payload.room, socketId: socket.getId() } ),
-                    exclude = socket.getId()
-                )
-                break
-
-            case "chat":
-                broadcast(
-                    room    = socket.getRoom(),
-                    message = serializeJSON( {
-                        type    : "chat",
-                        from    : payload.username,
-                        body    : encodeForHTML( payload.body ),
-                        sentAt  : dateTimeFormat( now(), "iso8601" )
-                    } )
-                )
-                break
-
-            case "leave":
-                socket.leaveRoom()
-                break
+    function onMessage( required message, required channel ) {
+        if ( arguments.message EQ "Ping" ) {
+            sendMessage( "Pong", arguments.channel );
         }
     }
+}
+```
 
-    // Fires on error
-    void function onError( socket, error, event ) {
-        log.error( "WebSocket error for socket #socket.getId()#: #error.message#" )
+## STOMP Broker Mode
+
+Use this when you want destinations, subscriptions, exchange routing, heartbeats,
+and optional auth/authz hooks.
+
+### Base class
+
+```js
+component extends="modules.socketbox.models.WebSocketSTOMP" {
+}
+```
+
+### STOMP hooks (override as needed)
+
+- `configure()`
+- `authenticate( required string login, required string passcode, string host, required channel )`
+- `authorize( required string login, required string exchange, required string destination, required string access, required channel )`
+- `onSTOMPConnect( required message, required channel )`
+- `onSTOMPDisconnect( required message, required channel )`
+
+### STOMP public server-side methods
+
+- `send( required string destination, required any messageData, struct headers={} )`
+- `getSubscriptions()`
+- `getExchanges()`
+- `getSTOMPConnections()`
+- `getConfig()`
+- `getConnectionDetails( required channel )`
+
+### STOMP message object methods
+
+- `getCommand()`
+- `getBody()`
+- `getHeaders()`
+- `getHeader( required string key, string defaultValue )`
+- `getBodyRaw()`
+- `getChannel()`
+
+### STOMP configure example
+
+```js
+component extends="modules.socketbox.models.WebSocketSTOMP" {
+
+    /**
+     * Called when server starts. If debugMode=true, reloaded every request.
+     */
+    function configure() {
+        return {
+            "debugMode"   : false,
+            "heartBeatMS" : 10000,
+            "exchanges"   : {
+                "topic" : {
+                    "bindings" : {
+                        "myTopic.*" : "destination1"
+                    }
+                }
+            },
+            "subscriptions" : {
+                "destination1" : ( message ) => {
+                    writeDump( var=message.getBody() );
+                }
+            }
+        };
     }
 }
 ```
 
-## Broadcasting
+## Browser/Client Examples
 
-```js
-// Send to all clients in a room
-broadcast( room = "lobby", message = serializeJSON( notification ) )
-
-// Send to all except one client
-broadcast( room = "lobby", message = msg, exclude = socket.getId() )
-
-// Send to a specific socket
-socket.send( serializeJSON( { type: "ack", id: messageId } ) )
-
-// Send to all connected clients (no room filter)
-broadcastAll( serializeJSON( { type: "announcement", message: "Server restarting in 5 min" } ) )
-```
-
-## Client-Side JavaScript
+### Basic WebSocket client
 
 ```html
 <script>
-const ws = new WebSocket( "ws://localhost:8080" )
+socket = new WebSocket( 'ws://localhost/ws' );
 
-ws.onopen = () => {
-    ws.send( JSON.stringify( { type: "join", room: "lobby" } ) )
-}
+socket.onopen = function() {
+    console.log( 'Connected to WebSocket server' );
+    socket.send( "Hello from the browser!" );
+};
 
-ws.onmessage = ( event ) => {
-    const payload = JSON.parse( event.data )
+socket.onmessage = function( event ) {
+    console.log( 'Message from server:', event.data );
+};
 
-    if ( payload.type === "chat" ) {
-        appendChatMessage( payload.from, payload.body )
-    }
-}
+socket.onclose = function() {
+    console.log( 'Socket is closed.' );
+};
 
-ws.onclose = () => console.log( "Disconnected" )
-
-function sendChat( body ) {
-    ws.send( JSON.stringify( { type: "chat", username: currentUser, body: body } ) )
-}
+socket.onerror = function( err ) {
+    console.error( 'Socket encountered error:', err.message );
+};
 </script>
 ```
 
-## Production Patterns
+### STOMP client example
 
-### Server-Push Notifications (from a ColdBox Handler)
-
-```js
-// ColdBox handler pushes a notification via socketbox
-property name="socketbox" inject="SocketBox@socketbox";
-
-function approve( event, rc, prc ) {
-    approvalService.approve( rc.id )
-
-    // Push real-time update to the relevant room
-    socketbox.broadcast(
-        room    = "order_#rc.orderId#",
-        message = serializeJSON( {
-            type    : "order_approved",
-            orderId : rc.orderId,
-            ts      : dateTimeFormat( now(), "iso8601" )
-        } )
-    )
-
-    event.renderData( type = "json", data = { success: true } )
+```html
+<script type="importmap">
+{
+  "imports": {
+    "@stomp/stompjs": "https://ga.jspm.io/npm:@stomp/stompjs@7.0.0/esm6/index.js"
+  }
 }
-```
+</script>
+<script type="module">
+import { Client } from '@stomp/stompjs';
 
-### Authentication on Connect
+client = new Client({
+  brokerURL: 'ws://localhost/ws',
+  reconnectDelay: 5000,
+  heartbeatIncoming: 10000,
+  heartbeatOutgoing: 10000,
+  connectHeaders: {
+    login: 'myuser',
+    passcode: 'mypass'
+  },
+  onConnect: () => {
+    client.subscribe( 'my-destination', function( message ) {
+      console.log( 'Message received', message.body );
+    });
+  }
+});
 
-```js
-void function onConnect( socket, event ) {
-    var token  = socket.getHeader( "Authorization" ) ?: ""
-    var userId = jwtService.parseToken( token )
-
-    if ( isNull( userId ) ) {
-        socket.send( serializeJSON( { type: "error", message: "Unauthorized" } ) )
-        socket.close( 4001, "Unauthorized" )
-        return
-    }
-
-    socket.setAttribute( "userId", userId )
-    socket.joinRoom( "user_#userId#" )
-}
+client.activate();
+</script>
 ```
 
 ## Best Practices
 
-- **Validate and sanitize** all incoming message payloads — never trust client-supplied data
-- **Encode user-generated text** (`encodeForHTML`) before broadcasting to chat rooms
-- **Authenticate on connect** using a short-lived token (JWT or session token) — not per message
-- **Use rooms** to scope broadcasts — avoid broadcasting to all clients unless truly needed
-- **Cap message size** with `maxPayloadSize` to prevent memory exhaustion attacks
-- **Use WSS (TLS)** in production — plain WebSocket connections expose data in transit
-- **Handle `onError` and `onDisconnect`** — clean up rooms and notify other participants
+- SocketBox models room-like routing via STOMP exchanges, destinations, and subscriptions, not room-named core methods such as joinRoom/leaveRoom.
+- Core mode messages are plain strings. Define your own JSON conventions if needed.
+- Prefer STOMP mode when you need routing, subscriptions, auth/authz semantics, and heartbeat behavior.
+- Use `wss://` in production.
+- If clustering is enabled in STOMP config, call inherited `shutdown()` during app shutdown.
 
 ## Documentation
 
-- socketbox: https://github.com/coldbox-modules/socketbox
+- SocketBox README: https://github.com/coldbox-modules/SocketBox#readme
