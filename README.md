@@ -13,14 +13,14 @@ This repository is a [Claude Code plugin marketplace](https://code.claude.com/do
 Add the marketplace and install the plugin:
 
 ```bash
-/plugin marketplace add ortus-boxlang/coldbox-skills
+/plugin marketplace add ColdBox/skills
 /plugin install coldbox-agent-skills@coldbox-skills
 ```
 
 Or using the CLI:
 
 ```bash
-claude plugin marketplace add ortus-boxlang/coldbox-skills
+claude plugin marketplace add ColdBox/skills
 claude plugin install coldbox-agent-skills@coldbox-skills
 ```
 
