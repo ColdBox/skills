@@ -1,0 +1,13 @@
+{
+  "name": "coldbox-skills",
+  "owner": {
+    "name": "Ortus Solutions",
+    "email": "info@ortussolutions.com"
+  },
+  "plugins": [
+    {
+      "name": "coldbox-agent-skills",
+      "source": "./"
+    }
+  ]
+}
