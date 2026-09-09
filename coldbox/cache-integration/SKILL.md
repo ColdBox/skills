@@ -1,6 +1,6 @@
 ---
 name: coldbox-cache-integration
-description: "Use this skill when implementing caching inside a ColdBox application -- configuring CacheBox via ColdBox.cfc or config/CacheBox.cfc, injecting caches with WireBox (cachebox:name), using getCache() in handlers, event/view output caching with setEventCacheableEntry(), view fragment caching with renderView(cache=true), query caching, cache listeners as ColdBox interceptors, Redis/distributed provider setup, or choosing between default and template caches."
+description: "Use this skill when implementing caching inside a ColdBox application -- configuring CacheBox via ColdBox.cfc or config/CacheBox.cfc, injecting caches with WireBox (cachebox:name), using getCache() in handlers, event output caching with action cache annotations, view fragment caching with renderView(cache=true), query caching, cache listeners as ColdBox interceptors, Redis/distributed provider setup, or choosing between default and template caches."
 applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
@@ -374,33 +374,16 @@ function getExpensiveValue( required string key, required any loader, numeric ti
 ## 6. Event Output Caching
 
 Cache the entire output of a handler event. ColdBox stores the rendered HTML in the `template` cache provider.
+Use action-level cache annotations on the handler method (not `event.setEventCacheableEntry()`, which is an internal framework API).
 
 **BoxLang:**
 
 ```cfscript
 class Catalog extends coldbox.system.EventHandler {
 
-    function index( event, rc, prc ) {
-        // Cache this event's output for 60 min, idle 30 min
-        event.setEventCacheableEntry(
-            provider   : "template",
-            timeout    : 60,
-            lastAccess : 30
-        )
+    function index( event, rc, prc ) cache=true cacheTimeout=60 cacheLastAccessTimeout=30 cacheProvider="template" cacheSuffix="catalog-index" {
         prc.categories = categoryService.list()
         event.setView( "catalog/index" )
-    }
-
-    function show( event, rc, prc ) {
-        // Cache per product ID — different cache entry per suffix
-        event.setEventCacheableEntry(
-            provider   : "template",
-            timeout    : 120,
-            lastAccess : 60,
-            suffix     : rc.id ?: "0"
-        )
-        prc.product = productService.getById( rc.id ?: 0 )
-        event.setView( "catalog/show" )
     }
 }
 ```
@@ -410,12 +393,11 @@ class Catalog extends coldbox.system.EventHandler {
 ```cfscript
 component extends="coldbox.system.EventHandler" {
 
-    function index( event, rc, prc ) {
-        event.setEventCacheableEntry(
-            provider   : "template",
-            timeout    : 60,
-            lastAccess : 30
-        )
+    function index(
+        event,
+        rc,
+        prc
+    ) cache="true" cacheTimeout="60" cacheLastAccessTimeout="30" cacheProvider="template" {
         prc.categories = categoryService.list()
         event.setView( "catalog/index" )
     }
