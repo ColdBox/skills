@@ -24,6 +24,18 @@ claude plugin marketplace add ColdBox/skills
 claude plugin install coldbox-agent-skills@coldbox-skills
 ```
 
+## Install via Cursor Marketplace
+
+This repository also ships a [Cursor](https://cursor.com/) plugin manifest under [`.cursor-plugin/`](./.cursor-plugin/), covering the same skill set as the Claude plugin. Add it from Cursor's Marketplace (Settings → Marketplace → Add Marketplace, or your installed Cursor version's marketplace/plugin CLI) pointed at:
+
+```
+ColdBox/skills
+```
+
+## Install via Grok Plugin
+
+A Grok-compatible plugin manifest is published at [`.grok-plugin/plugin.json`](./.grok-plugin/plugin.json). Point your Grok agent's plugin/marketplace loader at this repository (`ColdBox/skills`) to install it.
+
 ## ColdBox CLI
 
 ```bash
