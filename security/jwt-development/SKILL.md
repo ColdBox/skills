@@ -36,7 +36,9 @@ box install jwtcfml
 // config/ColdBox.cfc
 moduleSettings = {
     cbsecurity: {
-        authenticationService: "JWTService@models",
+        authentication: {
+            provider: "JwtService@cbsecurity"
+        },
 
         jwt: {
             issuer:    "myapp",
@@ -58,14 +60,15 @@ moduleSettings = {
 
         firewall: {
             enabled: true,
-            defaultAction: "block",
+            defaultAuthenticationAction: "block",
             statusCode: 401
         },
 
         rules: [
             // Public auth endpoints
             {
-                whitelist: "api.auth.login,api.auth.register,api.auth.refresh",
+                secureList: "api.auth.login,api.auth.register,api.auth.refresh",
+                whiteList: true,
                 match: "event"
             },
             // All API routes require JWT
@@ -87,7 +90,7 @@ moduleSettings = {
  */
 class singleton {
 
-    property name="jwtService"  inject="JWTService@cbsecurity"
+    property name="jwtService"  inject="JwtService@cbsecurity"
     property name="userService" inject="UserService"
     property name="bcrypt"      inject="@BCrypt"
 
@@ -152,7 +155,7 @@ class singleton {
  */
 component {
 
-    property name="jwtService"  inject="JWTService@cbsecurity"
+    property name="jwtService"  inject="JwtService@cbsecurity"
     property name="userService" inject="UserService"
     property name="bcrypt"      inject="@BCrypt"
 

@@ -163,7 +163,7 @@ component {
  */
 class extends="coldbox.system.EventHandler" {
 
-    property name="auth" inject="authenticationService@cbauth"
+    property name="auth" inject="AuthenticationService@cbauth"
 
     // GET /login
     function login( event, rc, prc ) {
@@ -235,7 +235,7 @@ class extends="coldbox.system.EventHandler" {
  */
 component extends="coldbox.system.EventHandler" {
 
-    property name="auth" inject="authenticationService@cbauth"
+    property name="auth" inject="AuthenticationService@cbauth"
 
     // GET /login
     function login( event, rc, prc ) {
@@ -307,13 +307,14 @@ moduleSettings = {
     cbsecurity: {
         firewall: {
             enabled: true,
-            defaultAction: "redirect",
-            defaultRedirect: "/login"
+            defaultAuthenticationAction: "redirect",
+            invalidAuthenticationEvent: "auth.login"
         },
         rules: [
             // Public routes
             {
-                whitelist: "auth\\..*,main\\.index",
+                secureList: "auth\\..*,main\\.index",
+                whiteList: true,
                 match: "event"
             },
             // Protected dashboard
@@ -333,7 +334,7 @@ moduleSettings = {
 ```boxlang
 class extends="coldbox.system.EventHandler" {
 
-    property name="auth" inject="authenticationService@cbauth"
+    property name="auth" inject="AuthenticationService@cbauth"
 
     function dashboard( event, rc, prc ) {
         // Check authentication
@@ -354,7 +355,7 @@ class extends="coldbox.system.EventHandler" {
 ```cfml
 component extends="coldbox.system.EventHandler" {
 
-    property name="auth" inject="authenticationService@cbauth"
+    property name="auth" inject="AuthenticationService@cbauth"
 
     function dashboard( event, rc, prc ) {
         // Check authentication

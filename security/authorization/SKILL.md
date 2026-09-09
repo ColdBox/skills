@@ -57,7 +57,8 @@ moduleSettings = {
             },
             // Public whitelist
             {
-                whitelist: "main\\.index,auth\\..*",
+                secureList: "main\\.index,auth\\..*",
+                whiteList: true,
                 match: "event"
             }
         ]
@@ -228,7 +229,7 @@ class extends="coldbox.system.EventHandler" {
 
     property name="cbsecurity"  inject="@cbsecurity"
     property name="postService" inject="PostService"
-    property name="auth"        inject="authenticationService@cbauth"
+    property name="auth"        inject="AuthenticationService@cbauth"
 
     function edit( event, rc, prc ) {
         event.paramValue( "id", 0 )
@@ -251,7 +252,7 @@ component extends="coldbox.system.EventHandler" {
 
     property name="cbsecurity"  inject="@cbsecurity"
     property name="postService" inject="PostService"
-    property name="auth"        inject="authenticationService@cbauth"
+    property name="auth"        inject="AuthenticationService@cbauth"
 
     function edit( event, rc, prc ) {
         event.paramValue( "id", 0 )
@@ -325,8 +326,8 @@ moduleSettings = {
         firewall: {
             enabled: true,
             // "redirect" for web apps, "block" for APIs
-            defaultAction: "redirect",
-            defaultRedirect: "/login",
+            defaultAuthenticationAction: "redirect",
+            defaultAuthorizationAction: "redirect",
             // Status code when action = "block"
             statusCode: 401,
             // Override rejection handler
