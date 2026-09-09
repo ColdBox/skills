@@ -37,14 +37,17 @@ box install bcrypt
 // config/ColdBox.cfc
 moduleSettings = {
     cbsecurity: {
-        // Authentication service
-        authenticationService: "SecurityService@models",
+        // User and authentication providers
+        userService: "UserService",
+        authentication: {
+            provider: "AuthenticationService@cbauth"
+        },
 
         // Firewall
         firewall: {
             enabled: true,
-            defaultAction: "redirect",
-            defaultRedirect: "/login",
+            defaultAuthenticationAction: "redirect",
+            defaultAuthorizationAction: "redirect",
             // For APIs: use "block" with 401
             statusCode: 401,
             // Override rejection targets
@@ -55,7 +58,8 @@ moduleSettings = {
         // Security rules (processed top-to-bottom, first match wins)
         rules: [
             {
-                whitelist: "auth\\..*,main\\.index,main\\.about",
+                secureList: "auth\\..*,main\\.index,main\\.about",
+                whiteList: true,
                 match: "event"
             },
             {
@@ -399,8 +403,8 @@ function accessDenied( event, rc, prc ) {
 ## Security Checklist
 
 - [x] Install cbsecurity, cbauth, bcrypt
-- [x] Configure `authenticationService` in moduleSettings
-- [x] Define firewall rules (whitelist public routes, secure the rest)
+- [x] Configure `authentication.provider` in moduleSettings
+- [x] Define firewall rules (whiteList public routes, secure the rest)
 - [x] Use BCrypt for password hashing — never store plain text passwords
 - [x] Implement role/permission checking in handlers with `@secured`
 - [x] Log security events with LogBox

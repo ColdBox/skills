@@ -136,6 +136,8 @@ The [`.claude-plugin/plugin.json`](./.claude-plugin/plugin.json) registers these
 | [`sso-integration`](./security/sso-integration/SKILL.md) | SAML, OIDC, OAuth2, social login patterns |
 | [`passkeys-integration`](./security/passkeys-integration/SKILL.md) | Passkeys, WebAuthn, FIDO2, module integration |
 
+> `security/` provides implementation-pattern skills (auth, JWT, RBAC, SSO, CSRF). For module-specific CBSecurity setup/API details, use [`modules/cbsecurity`](./modules/cbsecurity/SKILL.md). These are complementary.
+
 ### `wirebox` — Dependency Injection Skills
 
 | Skill | What It Covers |
