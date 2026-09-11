@@ -1,6 +1,6 @@
 ---
 name: testbox-mockbox
-description: "Use this skill when creating mocks, stubs, and spies in TestBox using MockBox: createMock(), createEmptyMock(), prepareMock(), stubbing methods with $(), chaining $args()/$results()/$throws(), verifying call counts with $once()/$never()/$times()/$atLeast()/$atMost(), reading call logs with $callLog(), injecting mock properties with $property(), simulating queries with querySim(), or spying on real methods with $spy()."
+description: "Use this skill when creating mocks, stubs, and spies in TestBox using MockBox: createMock(), createEmptyMock(), prepareMock(), stubbing methods with $(), chaining $args()/$results()/$throws() (including order-independent struct matching and BoxLang Set/Range arguments), verifying call counts with $once()/$never()/$times()/$atLeast()/$atMost(), reading call logs with $callLog(), injecting mock properties with $property(), simulating queries with querySim(), or spying on real methods with $spy()."
 applyTo: "**/tests/**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
@@ -87,6 +87,45 @@ expect( mockConfig.getKey( "outgoingMail" ) ).toBe( "dev@example.com" )
 ```
 
 > Always follow `$args()` with `$results()`.
+
+### Matching Complex Arguments
+
+*TestBox 7.1+.* `$args()` used to compare structs by their serialized form, so a struct built in
+a different key order than the stub's failed to match even when the contents were identical.
+Struct matching is now **order-independent**, at any nesting depth:
+
+```boxlang
+// Stub declares one key order...
+mockRepo.$( "save" )
+    .$args( data = { name: "Alice", email: "alice@example.com" } )
+    .$results( { id: 1 } )
+
+// ...and the call under test builds another. This now matches.
+var result = mockRepo.save( data = { email: "alice@example.com", name: "Alice" } )
+expect( result.id ).toBe( 1 )
+```
+
+`$args()` also understands **BoxLang `Set` and `Range` objects** (BoxLang only). Sets match on
+their elements regardless of backing variant or insertion order, and a `Set` never matches an
+array holding the same elements — the types stay distinct:
+
+```boxlang
+// tests/specs/PermissionsMockSpec.bx — BoxLang only
+mockService.$( "grant" )
+    .$args( perms = setNew( type: "linked", values: [ 3, 1, 2 ] ) )
+    .$results( "granted" )
+
+// Different variant, different iteration order, same elements → matches
+expect( mockService.grant( perms = setNew( type: "sorted", values: [ 1, 2, 3 ] ) ) )
+    .toBe( "granted" )
+
+// An array with the same elements is NOT a Set → does not match
+expect( mockService.grant( perms = [ 1, 2, 3 ] ) ).notToBe( "granted" )
+```
+
+> Put Set/Range mock specs in a **`.bx` file**. `setOf()`, `setNew()` and the `..` range operator
+> are BoxLang-only syntax, and TestBox skips `.bx` bundles on Lucee and Adobe, so the file is
+> never compiled there.
 
 ---
 
@@ -295,7 +334,7 @@ class extends="testbox.system.BaseSpec" {
 | `createEmptyMock( className\|object )` | mock | All methods wiped |
 | `prepareMock( object )` | mock | Decorate existing instance |
 | `mock.$( method, [returns] )` | mock | Stub a method |
-| `mock.$args( ...args )` | mock | Match specific call arguments |
+| `mock.$args( ...args )` | mock | Match specific call arguments (structs match order-independently; BoxLang Sets/Ranges supported — 7.1+) |
 | `mock.$results( ...values )` | mock | Set sequential return values |
 | `mock.$throws( type, message, detail )` | mock | Make method throw |
 | `mock.$property( name, scope, mock )` | mock | Inject into any scope |

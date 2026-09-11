@@ -1,6 +1,6 @@
 ---
 name: coldbox-scheduled-tasks
-description: "Use this skill when creating ColdBox scheduled tasks, building Scheduler.cfc files, registering task frequencies, managing task life-cycles (before/after/onFailure/onSuccess), using server fixation for clustered apps, or configuring module schedulers."
+description: "Use this skill when creating ColdBox scheduled tasks, building Scheduler.cfc files, registering task frequencies, preventing overlapping runs with withNoOverlaps(), constraining tasks to a time-of-day window with between()/startOnTime()/endOnTime(), managing task life-cycles (before/after/onFailure/onSuccess), using server fixation for clustered apps, or configuring module schedulers."
 applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
@@ -190,6 +190,30 @@ task( "my-task-name" )          // unique name — returns ColdBoxScheduledTask
 .spacedDelay( 30, "seconds" )
 ```
 
+`withNoOverlaps()` converts the task from a fixed-**rate** schedule to a fixed-**delay** one: the
+next run is scheduled `period` after the previous run *finishes*, rather than every `period`
+regardless of how long a run takes.
+
+> **ColdBox 8.2.0 fix ([COLDBOX-1434](https://ortussolutions.atlassian.net/browse/COLDBOX-1434)):**
+> combining `withNoOverlaps()` with a daily start time (`between()` or `startOnTime()`) fired the
+> task far too often. The start-time alignment converts `period`/`timeUnit` to seconds, but the
+> no-overlap delay had already been snapshotted in the **original** unit — so a task declared
+> `every( 1, "minutes" )` was scheduled as `1` *second*. It re-fired every second instead of every
+> 60. The snapshot now happens after the alignment.
+>
+> ```javascript
+> // Correct from 8.2.0 onward — runs once a minute inside the window
+> task( "poll-inbox" )
+>     .call( () => runEvent( "scheduler.pollInbox" ) )
+>     .every( 1, "minutes" )
+>     .between( "09:00", "17:00" )
+>     .withNoOverlaps()
+> ```
+>
+> On 8.1 and earlier, avoid pairing `withNoOverlaps()` with `between()`/`startOnTime()`: either
+> drop the time window and gate the work with `.when()`, or declare the period in the unit the
+> alignment produces (`.every( 60, "seconds" )`).
+
 ### Startup Delay
 
 ```javascript
@@ -302,6 +326,7 @@ Helper methods available: `getInstance()`, `announce()`, `runEvent()`, `runRoute
 - Always create a unique task name — duplicate names cause conflicts.
 - Call `.call()` before any frequency method.
 - Use `.withNoOverlaps()` on tasks that may run longer than their interval.
+- Pairing `.withNoOverlaps()` with `.between()`/`.startOnTime()` requires ColdBox 8.2.0+ — earlier versions mis-schedule the interval (COLDBOX-1434).
 - Use `.onOneServer()` for tasks that must run once across a cluster — requires a distributed cache.
 - Omit any frequency method to make a task **one-off** (run once at startup, optionally after a `delay()`).
 - Use `xtask()` prefix to temporarily disable a task without removing it (like TestBox's `xdescribe`).
