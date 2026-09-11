@@ -1,6 +1,6 @@
 ---
 name: testbox-assertions
-description: "Use this skill when using the TestBox $assert object for xUnit-style assertions: isTrue, isEqual, includes, isEmpty, key, instanceOf, throws, between, closeTo, lengthOf, match, null, typeOf, and others; registering custom assertion functions with addAssertions(); or using BoxLang dynamic assertion methods (assertIsTrue, assertBetween, etc.)."
+description: "Use this skill when using the TestBox $assert object for xUnit-style assertions: isTrue, isFalse, isTruthy, isFalsy, isEqual, isSameInstance, includes, includesAll, includesAny, includesNone, isEmpty, key, deepKey, instanceOf, throws, between, closeTo, lengthOf, match, null, typeOf, isJSON and others; grouping assertions with $assert.all() / assertAll() so every failure is reported at once; registering custom assertion functions with addAssertions(); or using BoxLang dynamic assertion methods (assertIsTrue, assertBetween, etc.)."
 applyTo: "**/tests/**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
@@ -10,6 +10,7 @@ applyTo: "**/tests/**/*.{bx,bxm,cfc,cfm,cfml}"
 
 - Writing xUnit-style assertions using the `$assert` object in test functions
 - Using the full `testbox.system.Assertion` API for validation
+- Reporting every failure in a group at once with `$assert.all()` / `assertAll()`
 - Registering inline or class-based custom assertions with `addAssertions()`
 - Using BoxLang dynamic `assertXxx()` method variants
 
@@ -37,6 +38,11 @@ function testUserCreation() {
 ```boxlang
 $assert.isTrue( actual, [message] )
 $assert.isFalse( actual, [message] )
+
+// TestBox 7.1+ — loose truthiness.
+// Falsy = false, 0, "" (empty string) and null. Everything else is truthy.
+$assert.isTruthy( actual, [message] )
+$assert.isFalsy( actual, [message] )
 ```
 
 ### Equality
@@ -45,6 +51,14 @@ $assert.isFalse( actual, [message] )
 $assert.isEqual( expected, actual, [message] )                // case-insensitive
 $assert.isEqualWithCase( expected, actual, [message] )
 $assert.isNotEqual( expected, actual, [message] )
+```
+
+### Identity
+
+```boxlang
+// Same object, not merely an equal one — useful for proving WireBox scopes
+$assert.isSameInstance( expected, actual, [message] )
+$assert.isNotSameInstance( expected, actual, [message] )
 ```
 
 ### Null
@@ -84,6 +98,16 @@ $assert.includes( target, needle, [message] )              // case-insensitive
 $assert.includesWithCase( target, needle, [message] )
 $assert.notIncludes( target, needle, [message] )
 $assert.notIncludesWithCase( target, needle, [message] )
+
+// TestBox 7.1+ — multi-needle forms. `needles` is an ARRAY; matching is case-insensitive.
+$assert.includesAll( target, needles, [message] )     // every needle must be found
+$assert.includesAny( target, needles, [message] )     // at least one needle must be found
+$assert.includesNone( target, needles, [message] )    // no needle may be found
+
+// Examples
+$assert.includesAll( response.body, [ "id", "name", "email" ] )
+$assert.includesAny( logOutput, [ "WARN", "ERROR" ] )
+$assert.includesNone( serializeJSON( memento ), [ "password", "salt" ] )
 ```
 
 ### Type Checks
@@ -145,6 +169,61 @@ $assert.assert( expression, [message] )
 // example:
 $assert.assert( user.age >= 18, "User must be an adult" )
 ```
+
+---
+
+## Grouped Assertions — `$assert.all()` / `assertAll()`
+
+*TestBox 7.1+. Works on every engine.*
+
+A normal test stops at the **first** failed assertion, so you fix one thing, re-run, and discover
+the next. `$assert.all()` runs every closure you hand it, collects the failures, and reports them
+together in one aggregated `TestBox.AssertionFailed` — message says how many failed, detail
+numbers each one.
+
+```boxlang
+$assert.all( executables, [heading] )
+```
+
+- `executables` — an **array of closures**, each containing one or more assertions
+- `heading` — optional text prefixed to the aggregated failure message
+
+```boxlang
+function testUserShape() {
+    var user = userService.create( { name: "Alice", email: "alice@example.com" } )
+
+    $assert.all( [
+        () => $assert.key( user, "id" ),
+        () => $assert.isEqual( "Alice", user.name ),
+        () => $assert.isEqual( "alice@example.com", user.email ),
+        () => $assert.typeOf( "date", user.createdAt )
+    ], "User shape" )
+    // Failure reads: User shape — 2 assertion(s) failed, with both listed in the detail
+}
+```
+
+`assertAll()` is the spec-level shortcut for the same thing, and reads better inside BDD blocks.
+It takes the identical arguments and delegates straight to `$assert.all()`:
+
+```boxlang
+it( "returns a fully-populated response", () => {
+    var res = api.get( "/users/1" )
+
+    assertAll( [
+        () => expect( res.status ).toBe( 200 ),
+        () => expect( res.body ).toHaveKey( "id" ),
+        () => expect( res.body ).toHaveKey( "name" ),
+        () => expect( res.body ).notToHaveKey( "passwordHash" )
+    ], "GET /users/1" )
+} )
+```
+
+> Closures may mix `$assert` and `expect()` freely — both raise `TestBox.AssertionFailed`, which
+> is what the group collects. A closure that throws anything *else* is not caught, so a genuine
+> runtime error still surfaces immediately rather than being folded into the summary.
+
+Reach for it when several assertions describe **one** outcome (a response shape, an entity's
+fields, a config block). Keep separate `it()` blocks for genuinely separate behaviours.
 
 ---
 
@@ -299,7 +378,12 @@ Use `$assert` when:
 Use `expect()` when:
 - Writing BDD specs
 - You want fluent chaining: `expect( x ).toBe( y ).toHaveKey( "z" )`
-- You want `expectAll()` for collection assertions
+- You want the collection starters (`expectAll`, `expectAny`, `expectSome`, `expectNone`)
+- You want `withContext()` to label failure messages
 - You want custom matchers with `not` negation
+- You need the BoxLang-only Set, Range or Data Navigator matchers
+
+Either style can be grouped with `$assert.all()` / `assertAll()` — see the
+[`testbox-expectations`](../expectations/SKILL.md) skill for the matcher side.
 
 Both are available in the same bundle — mix freely.

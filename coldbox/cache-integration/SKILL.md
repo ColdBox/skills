@@ -1,6 +1,6 @@
 ---
 name: coldbox-cache-integration
-description: "Use this skill when implementing caching inside a ColdBox application -- configuring CacheBox via ColdBox.cfc or config/CacheBox.cfc, injecting caches with WireBox (cachebox:name), using getCache() in handlers, event output caching with action cache annotations, view fragment caching with renderView(cache=true), query caching, cache listeners as ColdBox interceptors, Redis/distributed provider setup, or choosing between default and template caches."
+description: "Use this skill when implementing caching inside a ColdBox application -- configuring CacheBox via ColdBox.cfc or config/CacheBox.cfc, injecting caches with WireBox (cachebox:name), using getCache() in handlers, event output caching with action cache annotations, view fragment caching with renderView(cache=true), query caching, cache listeners as ColdBox interceptors, engine-native providers (BoxLangColdBoxProvider, LuceeColdBoxProvider, CFColdBoxProvider), Redis/distributed provider setup, or choosing between default and template caches."
 applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
@@ -138,20 +138,34 @@ function configure() {
 }
 ```
 
-### 2d. Engine-native providers (Lucee / Adobe CF caches)
+### 2d. Engine-native providers (BoxLang / Lucee / Adobe CF caches)
+
+Delegate a region to the engine's own cache instead of CacheBox's engine:
 
 ```cfscript
 // config/CacheBox.cfc  — add after the default caches block
-if ( listFindNoCase( "Lucee", server.coldfusion.productname ) ) {
-    cacheBox.caches.luceeCache = {
+if ( server.keyExists( "boxlang" ) ) {
+    cacheBox.caches.engineCache = {
+        provider : "coldbox.system.cache.providers.BoxLangColdBoxProvider"
+    };
+} else if ( listFindNoCase( "Lucee", server.coldfusion.productname ) ) {
+    cacheBox.caches.engineCache = {
         provider : "coldbox.system.cache.providers.LuceeColdBoxProvider"
     };
 } else {
-    cacheBox.caches.cfCache = {
+    cacheBox.caches.engineCache = {
         provider : "coldbox.system.cache.providers.CFColdBoxProvider"
     };
 }
 ```
+
+> **ColdBox 8.2.0 fix:** `BoxLangProvider` (and the `BoxLangColdBoxProvider` that extends it) did
+> not convert CacheBox's minute-based timeouts before handing them to BoxLang's cache, which reads
+> a bare number as **seconds** — so every timeout expired 60× too early. A region moved from
+> `CacheBoxProvider` to `BoxLangProvider` kept a 10 minute object for 10 seconds.
+> `LuceeProvider` and `CFProvider` always converted. On 8.1 and earlier, multiply your BoxLang
+> provider timeouts by 60 to compensate, then remove that workaround when you upgrade — otherwise
+> the same values become 60× too *long*.
 
 ### 2e. Redis provider (`cbRedis` module)
 
@@ -242,7 +256,8 @@ var cacheBox = getCacheBox();
 
 ## 4. Core Cache API (Same for All Providers)
 
-All timeouts are in **minutes**.
+All timeouts are in **minutes** — this is CacheBox's unit across every provider, and each engine
+provider converts to whatever its underlying cache expects.
 
 ```cfscript
 // ── WRITE ────────────────────────────────────────────────────────────────────

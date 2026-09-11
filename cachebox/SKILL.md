@@ -1,6 +1,6 @@
 ---
 name: cachebox-standalone
-description: "Use this skill when working with CacheBox as a standalone caching framework (outside ColdBox) -- installing, creating and bootstrapping the CacheFactory, configuring the DSL, choosing object stores and eviction policies, selecting cache providers (CacheBoxProvider, CF, Lucee), implementing cache-aside/stampede-protection patterns, registering standalone listeners, named caches, disk/JDBC stores, reaping, shutdown, or monitoring cache performance."
+description: "Use this skill when working with CacheBox as a standalone caching framework (outside ColdBox) -- installing, creating and bootstrapping the CacheFactory, configuring the DSL, choosing object stores and eviction policies, selecting cache providers (CacheBoxProvider, BoxLang, CF, Lucee), implementing cache-aside/stampede-protection patterns, registering standalone listeners, named caches, disk/JDBC stores, reaping, shutdown, or monitoring cache performance."
 applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
@@ -250,7 +250,14 @@ var extra = cacheBox.addDefaultCache( "SessionCache" );
 
 ## 5. Core Cache Provider API
 
-All providers share the `ICacheProvider` API. Timeouts are in **minutes**.
+All providers share the `ICacheProvider` API. Timeouts are in **minutes** — each engine provider
+converts to whatever unit its underlying cache expects.
+
+> **CacheBox 8.2.0 fix:** `BoxLangProvider` did not perform that conversion, and BoxLang's cache
+> reads a bare number as **seconds**, so every timeout expired 60× too early — a region moved from
+> `CacheBoxProvider` to `BoxLangProvider` kept a 10 minute object for 10 seconds. `LuceeProvider`
+> and `CFProvider` always converted. On 8.1 and earlier, multiply BoxLang provider timeouts by 60,
+> and drop that workaround on upgrade or the values become 60× too long.
 
 ```cfscript
 // ── WRITE ────────────────────────────────────────────────────────────────────
@@ -393,6 +400,8 @@ component {
 |----------|----------|
 | `cachebox.system.cache.providers.CacheBoxProvider` | **Standalone apps** — native CacheBox engine |
 | `cachebox.system.cache.providers.CacheBoxColdBoxProvider` | ColdBox apps (default cache only, `coldboxEnabled:true`) |
+| `cachebox.system.cache.providers.BoxLangProvider` | Delegate to BoxLang's built-in cache (standalone) |
+| `cachebox.system.cache.providers.BoxLangColdBoxProvider` | Delegate to BoxLang's built-in cache (ColdBox) |
 | `cachebox.system.cache.providers.CFProvider` | Delegate to Adobe CF built-in cache (standalone) |
 | `cachebox.system.cache.providers.CFColdBoxProvider` | Delegate to Adobe CF built-in cache (ColdBox) |
 | `cachebox.system.cache.providers.LuceeProvider` | Delegate to Lucee built-in cache (standalone) |

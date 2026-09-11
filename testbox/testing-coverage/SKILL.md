@@ -1,6 +1,6 @@
 ---
 name: testing-coverage
-description: "Use this skill when setting up code coverage analysis for ColdBox/ColdFusion/BoxLang applications, configuring coverage reporting, integrating coverage with CI pipelines, using TestBox coverage options, interpreting coverage metrics, or improving test coverage of untested code paths."
+description: "Use this skill when setting up code coverage analysis for ColdBox/ColdFusion/BoxLang applications, configuring coverage reporting, enabling coverage on the CFML web runner with the coverageEnabled URL parameter (opt-in since TestBox 7.1), integrating coverage with CI pipelines, using TestBox coverage options, interpreting coverage metrics, or improving test coverage of untested code paths."
 applyTo: "**/tests/**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
@@ -22,6 +22,30 @@ Examples use **BoxLang (`.bx`)** syntax by default. Adapt for your target langua
 | Tag prefix | `<bx:if>`, `<bx:output>`, `<bx:set>` | `<cfif>`, `<cfoutput>`, `<cfset>` |
 
 > **CFML Compat Mode**: With BoxLang + CFML Compat module, `.bx` and `.cfc` files coexist freely. BoxLang-native classes use `class {}` (`.bx` files); CFML-compat classes use `component {}` (`.cfc` files).
+
+## Coverage Is Opt-In (TestBox 7.1+)
+
+The `coverageEnabled` URL parameter on the CFML web runners (`HTMLRunner.cfm`,
+`StreamingRunner.cfm`) now defaults to **`false`**. It used to default to `true`, which meant
+every browser test run paid the instrumentation cost whether or not anyone wanted a report.
+
+```
+# Coverage OFF — the default since 7.1
+http://localhost:8080/tests/runner.cfm
+
+# Coverage ON — opt in explicitly
+http://localhost:8080/tests/runner.cfm?coverageEnabled=true
+```
+
+Coverage collection requires **FusionReactor**; without it the run proceeds with coverage
+disabled. If a CI job or a bookmarked runner URL relied on the old default and its coverage
+report has gone empty, append `?coverageEnabled=true`.
+
+> This affects only the URL parameter on the CFML web runners. Coverage configured through
+> `box.json`, through the `options.coverage.enabled` struct passed to `new TestBox()`, or through
+> `box testbox run --coverage` is unchanged — those were always explicit.
+
+---
 
 ## Coverage Types
 

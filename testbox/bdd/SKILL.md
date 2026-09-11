@@ -1,6 +1,6 @@
 ---
 name: testbox-bdd
-description: "Use this skill when writing BDD-style tests with TestBox using describe/it blocks, feature/story/scenario/given/when/then Gherkin-style suites, lifecycle hooks (beforeAll/afterAll/beforeEach/afterEach/aroundEach), focused specs (fit/fdescribe), skipping specs (xit/xdescribe/skip()), spec data binding, asyncAll parallel specs, nested suite trees, labels, or organizing tests around behavior descriptions."
+description: "Use this skill when writing BDD-style tests with TestBox using describe/it blocks, feature/story/scenario/given/when/then Gherkin-style suites, lifecycle hooks (beforeAll/afterAll/beforeEach/afterEach/aroundEach), focused specs (fit/fdescribe), skipping specs (xit/xdescribe/skip()) or whole test classes with the class-level skip annotation, engine detection helpers (isBoxLang/isLucee/isAdobe), grouped assertions with assertAll(), collection expectations (expectAll/expectAny/expectSome/expectNone), spec data binding, asyncAll parallel specs, nested suite trees, labels, or organizing tests around behavior descriptions."
 applyTo: "**/tests/**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
@@ -11,8 +11,9 @@ applyTo: "**/tests/**/*.{bx,bxm,cfc,cfm,cfml}"
 - Writing BDD-style test bundles for any ColdBox/BoxLang application
 - Using `describe()`, `it()`, or Gherkin aliases (`feature/story/scenario/given/when/then`)
 - Setting up lifecycle methods: `beforeAll`, `afterAll`, `beforeEach`, `afterEach`, `aroundEach`
-- Focusing or skipping suites and specs
+- Focusing or skipping suites, specs, or an entire test class
 - Passing data into specs via data binding
+- Grouping related assertions with `assertAll()` so every failure is reported at once
 - Running specs in parallel with `asyncAll`
 
 ---
@@ -246,6 +247,105 @@ it( title: "conditional skip closure", body: () => {
 } )
 ```
 
+### Skipping an Entire Test Class
+
+*TestBox 7.1+.* A `skip` annotation on the **class declaration** skips the whole bundle: no spec
+runs, `beforeAll`/`afterAll` do not fire, and the bundle is left out of the dry-run discovery
+tree entirely.
+
+```boxlang
+// tests/specs/LegacyImportSpec.bx — BoxLang
+class extends="testbox.system.BaseSpec" skip="true" {
+
+    function run() {
+        describe( "Legacy importer", () => {
+            it( "never runs while the class is skipped", () => {} )
+        } )
+    }
+
+}
+```
+
+```cfml
+// tests/specs/LegacyImportSpec.cfc — CFML
+component extends="testbox.system.BaseSpec" skip="true" {
+
+    function run(){
+        describe( "Legacy importer", function(){
+            it( "never runs while the class is skipped", function(){} )
+        } )
+    }
+
+}
+```
+
+The annotation also accepts a **method name on the class**, which TestBox invokes to decide —
+this is how you skip a whole bundle per engine or per feature flag, with the reason stated in
+the docblock:
+
+```boxlang
+/**
+ * Skipped on any engine that is not BoxLang: this bundle exercises the
+ * BoxLang-only Set and Range matchers.
+ */
+class extends="testbox.system.BaseSpec" skip="isBoxLangMissing" {
+
+    function isBoxLangMissing() {
+        return !isBoxLang()
+    }
+
+    function run() {
+        describe( "Set matchers", () => {
+            it( "only runs on BoxLang", () => {
+                expect( setOf( 1, 2 ) ).toBeASet()
+            } )
+        } )
+    }
+
+}
+```
+
+| `skip` value | Effect |
+|---|---|
+| `skip="true"` (or a boolean expression) | Always skip the bundle |
+| `skip=""` (present, empty) | Always skip the bundle |
+| `skip="methodName"` | Call `methodName()` on the class; skip when it returns true |
+| annotation absent | Run normally |
+
+> Prefer the class-level `skip` over `xdescribe`-ing every suite in the file: it is one line, it
+> reads at the top of the class, and the bundle disappears from dry-run discovery rather than
+> reporting a tree of skipped specs.
+
+### Engine-Conditional Skipping
+
+`BaseSpec` gives you engine and OS predicates for skip decisions:
+
+| Helper | True when |
+|---|---|
+| `isBoxLang()` | Running on BoxLang |
+| `isLucee()` | Running on Lucee — and **not** BoxLang |
+| `isAdobe()` | Running on Adobe ColdFusion |
+| `isWindows()` / `isLinux()` / `isMac()` | Host OS |
+
+```boxlang
+it( "uses a Lucee-only function", () => {
+    if ( !isLucee() ) {
+        skip( "Lucee only" )
+    }
+    expect( luceeSpecificBehavior() ).toBeTrue()
+} )
+```
+
+> **TestBox 7.1 fix:** `isLucee()` used to return `true` under BoxLang, because BoxLang's CFML
+> compatibility layer also populates `server.lucee`. It now returns `false` on BoxLang. If you
+> hand-rolled `structKeyExists( server, "lucee" )` as a Lucee guard, replace it with `isLucee()`
+> — the raw check still misfires on BoxLang.
+
+BoxLang-only language surface (the `..` range operator, `setOf()`, data navigators) cannot even
+be *parsed* by Lucee or Adobe, so a runtime skip is too late. Put those specs in a **`.bx` file**
+instead: TestBox's bundle discovery skips `.bx` bundles outright on non-BoxLang engines, so the
+file is never compiled there.
+
 ---
 
 ## Spec Data Binding
@@ -328,6 +428,30 @@ describe( "Parallel cache reads", { asyncAll: true }, () => {
 
 ---
 
+## Grouped Assertions in a Spec — `assertAll()`
+
+*TestBox 7.1+.* A spec normally stops at the first failed assertion. When several assertions
+describe **one** outcome, `assertAll()` runs them all and reports every failure together:
+
+```boxlang
+it( "returns a fully-populated user response", () => {
+    var res = api.get( "/users/1" )
+
+    assertAll( [
+        () => expect( res.status ).toBe( 200 ),
+        () => expect( res.body ).toHaveKey( "id" ),
+        () => expect( res.body ).toHaveKey( "name" ),
+        () => expect( res.body ).notToHaveKey( "passwordHash" )
+    ], "GET /users/1" )
+} )
+```
+
+Keep separate `it()` blocks for genuinely separate behaviours — `assertAll()` is for one
+behaviour with several facets, not a way to cram a suite into a single spec. See the
+[`testbox-assertions`](../assertions/SKILL.md) skill for the full contract.
+
+---
+
 ## Key Functions Quick Reference
 
 | Function | Alias(es) | Description |
@@ -341,6 +465,10 @@ describe( "Parallel cache reads", { asyncAll: true }, () => {
 | `aroundEach( body )` | — | Wrap each spec (transaction rollback pattern) |
 | `expect( actual )` | — | Start a fluent expectation chain |
 | `expectAll( collection )` | — | Assert every element in an array/struct |
+| `expectAny( collection )` | — | Assert at least one element passes (7.1+) |
+| `expectSome( collection, min, max )` | — | Assert a bounded count passes (7.1+) |
+| `expectNone( collection )` | — | Assert zero elements pass (7.1+) |
+| `assertAll( executables, [heading] )` | `$assert.all()` | Run every assertion closure, report all failures at once (7.1+) |
 | `skip( [message], [detail] )` | — | Skip the current spec or suite inline |
 | `addMatchers( matchers )` | — | Register custom matchers |
 | `getInstance( name )` | — | Shortcut for WireBox `getInstance()` |

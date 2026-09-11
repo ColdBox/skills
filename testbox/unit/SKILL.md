@@ -1,6 +1,6 @@
 ---
 name: testbox-unit-xunit
-description: "Use this skill when writing xUnit-style tests in TestBox using test functions (testXxx()), setup/teardown lifecycle (beforeTests/afterTests/setup/teardown), $assert assertion object, or the Arrange-Act-Assert (AAA) pattern for unit testing services, models, and utilities in isolation."
+description: "Use this skill when writing xUnit-style tests in TestBox using test functions (testXxx()), setup/teardown lifecycle (beforeTests/afterTests/setup/teardown), the $assert assertion object, grouped assertions with $assert.all() / assertAll(), skipping a single test or an entire test class with the class-level skip annotation, engine detection helpers (isBoxLang/isLucee/isAdobe), or the Arrange-Act-Assert (AAA) pattern for unit testing services, models, and utilities in isolation."
 applyTo: "**/tests/**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
@@ -12,6 +12,8 @@ applyTo: "**/tests/**/*.{bx,bxm,cfc,cfm,cfml}"
 - Using `$assert` assertion methods (isTrue, isEqual, includes, throws, etc.)
 - Writing `beforeTests()` / `afterTests()` / `setup()` / `teardown()` lifecycle methods
 - Unit-testing CFC models, services, or utilities in isolation with mocked dependencies
+- Skipping a single test function or an entire test class
+- Grouping related assertions with `$assert.all()` so every failure is reported at once
 - Applying the Arrange-Act-Assert (AAA) pattern
 
 ---
@@ -254,6 +256,89 @@ function testConditional() {
 }
 ```
 
+### Skipping an Entire Test Class
+
+*TestBox 7.1+.* A `skip` annotation on the **class declaration** skips the whole bundle: no test
+function runs, `beforeTests`/`afterTests` do not fire, and the bundle is left out of dry-run
+discovery entirely.
+
+```boxlang
+// BoxLang
+class extends="testbox.system.BaseSpec" skip="true" {
+    function testNothingRuns() {
+        $assert.fail( "never reached" )
+    }
+}
+```
+
+```cfml
+// CFML
+component extends="testbox.system.BaseSpec" skip="true" {
+    function testNothingRuns(){
+        $assert.fail( "never reached" );
+    }
+}
+```
+
+The annotation also accepts a **method name on the class**, which TestBox invokes to decide:
+
+```boxlang
+/**
+ * Skipped off BoxLang: this bundle exercises BoxLang-only Set behaviour.
+ */
+class extends="testbox.system.BaseSpec" skip="isBoxLangMissing" {
+
+    function isBoxLangMissing() {
+        return !isBoxLang()
+    }
+
+    function testSetBehaviour() {
+        $assert.isASet( setOf( 1, 2, 3 ) )
+    }
+
+}
+```
+
+| `skip` value | Effect |
+|---|---|
+| `skip="true"` (or a boolean expression) | Always skip the bundle |
+| `skip=""` (present, empty) | Always skip the bundle |
+| `skip="methodName"` | Call `methodName()` on the class; skip when it returns true |
+| annotation absent | Run normally |
+
+`BaseSpec` supplies the engine predicates these guards usually need: `isBoxLang()`, `isLucee()`,
+`isAdobe()`, `isWindows()`, `isLinux()`, `isMac()`.
+
+> **TestBox 7.1 fix:** `isLucee()` used to return `true` under BoxLang, since BoxLang's CFML
+> compatibility layer also populates `server.lucee`. It now returns `false` on BoxLang — prefer
+> `isLucee()` over a hand-rolled `structKeyExists( server, "lucee" )` check, which still misfires.
+
+---
+
+## Grouped Assertions — `$assert.all()`
+
+*TestBox 7.1+.* A test function stops at its first failed assertion. When several assertions
+describe **one** outcome, `$assert.all()` runs every closure and reports all the failures in a
+single aggregated error instead:
+
+```boxlang
+function testUserShape() {
+    // Arrange / Act
+    var user = variables.service.create( { name: "Alice", email: "alice@example.com" } )
+
+    // Assert — every failure reported at once
+    $assert.all( [
+        () => $assert.key( user, "id" ),
+        () => $assert.isEqual( "Alice", user.name ),
+        () => $assert.isEqual( "alice@example.com", user.email ),
+        () => $assert.typeOf( "date", user.createdAt )
+    ], "User shape" )
+}
+```
+
+`assertAll( executables, [heading] )` is the same call under a shorter name. See the
+[`testbox-assertions`](../assertions/SKILL.md) skill for the full contract.
+
 ---
 
 ## Custom Assertions
@@ -302,7 +387,9 @@ function beforeTests() {
 | Suite declaration | Class-level | `describe( "...", () => {} )` |
 | Lifecycle | `beforeTests/setup/teardown/afterTests` | `beforeAll/beforeEach/afterEach/afterAll/aroundEach` |
 | Assertions | `$assert.isXxx()` | `expect().toBeXxx()` |
-| Skip | `skip` function attribute | `xit()`, `skip()` inline |
+| Skip a test | `skip` function attribute | `xit()`, `skip()` inline |
+| Skip a whole class | class-level `skip` annotation (7.1+) | class-level `skip` annotation (7.1+) |
+| Group assertions | `$assert.all()` (7.1+) | `assertAll()` (7.1+) |
 | Nesting | Not supported | Unlimited nested `describe` blocks |
 | Data binding | Not supported | `it( data={} )` |
 

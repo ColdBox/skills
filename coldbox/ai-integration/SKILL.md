@@ -1,6 +1,6 @@
 ---
 name: coldbox-ai-integration
-description: "Use this skill when integrating AI capabilities into a ColdBox application using the BoxLang AI library (bx-ai module) -- including simple chat, streaming, pipelines, agents, RAG with vector memory, document loading, tool calling, and injecting the AI service into handlers or models."
+description: "Use this skill when integrating AI capabilities into a ColdBox application using the BoxLang AI library (bx-ai module) -- including simple chat, streaming, pipelines, agents, RAG with vector memory, document loading, tool calling, exposing an AI Gateway over HTTP with route( ... ).toAiGateway() for platform webhooks and human-in-the-loop approvals, and injecting the AI service into handlers or models."
 applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
@@ -264,6 +264,80 @@ var response1 = assistant.chat( "How do I create an interceptor?" )
 var response2 = assistant.chat( "Can you show me a security example?" )  // remembers context
 ```
 
+## Exposing an Agent to a Platform — AI Gateways
+
+*ColdBox 8.2.0+. BoxLang only; requires `bxai`.*
+
+An **AI Gateway** is the bridge between an external messaging platform (Slack, Teams, a custom
+webhook) and one of your agents. ColdBox mounts one over HTTP with a single routing terminator:
+
+```boxlang
+// config/Router.cfc
+class Router extends coldbox.system.web.routing.Router {
+
+    function configure() {
+        // One mount serving every gateway in aiGatewayRegistry()
+        route( "/gateways" ).toAiGateway( session: "SupportAgentSession" )
+
+        // Or pin the mount to one gateway
+        route( "/webhooks/slack" ).toAiGateway( "slack", "SupportAgentSession" )
+    }
+
+}
+```
+
+That registers everything a gateway surface needs:
+
+| Verb | Pattern | Purpose |
+|---|---|---|
+| `GET`/`POST` | `{pattern}[/:gateway]/events` | URL-verification handshake (GET) and inbound events (POST) |
+| `GET` | `{pattern}/interactions/:requestID` | Poll a pending human-in-the-loop interaction |
+| `POST` | `{pattern}/interactions/:requestID/decisions` | Submit a human's decision |
+| `GET` | `{pattern}/info` | Which gateways this mount serves |
+
+GET and POST share `/events` because a platform is given **one** URL and verifies it with a GET
+before it ever POSTs to it.
+
+### With a session — inbound messages become agent turns
+
+Pass `session` (a WireBox ID, or a live `GatewaySession` from `aiGatewaySession()`) and every
+inbound message is dispatched as an agent turn and acked **`202` immediately**, without waiting
+for the turn to finish. This matters: a platform webhook times out in seconds, an agent turn does
+not. The response reports which thread each message landed on so the later reply can be
+correlated.
+
+```boxlang
+// models/SupportAgentSession.bx — the session behind the mount
+class singleton {
+
+    function init() {
+        variables.session = aiGatewaySession( "support" )
+        return this
+    }
+
+}
+```
+
+```boxlang
+// Or hand the router a live session directly
+route( "/gateways" ).toAiGateway( session: aiGatewaySession( "support" ) )
+```
+
+### Without a session — verify and parse only
+
+Omit `session` and the route verifies the platform's signature and normalizes the payload, then
+hands the messages back for the application to dispatch itself. Use this when you want to queue
+the work, fan it out, or apply your own routing before an agent sees it.
+
+```boxlang
+route( "/gateways" ).toAiGateway()
+```
+
+> `toAiGateway()` throws at **route-registration time** on a non-BoxLang runtime, or when `bxai`
+> is missing — you find out at startup, not on the first webhook. See the
+> [`coldbox-routing-development`](../routing-development/SKILL.md) skill for route naming,
+> inherited modifiers, and `buildLink()` against the sub-routes.
+
 ## Document Processing (RAG Loaders)
 
 | Loader | Source |
@@ -309,4 +383,6 @@ var embedding = aiEmbed( "How does WireBox injection work?" )
 - Use `aiMemory( type: "windowed" )` with explicit `userId` + `conversationId` for multi-tenant isolation.
 - For production RAG, prefer a persistent vector store (`postgres`, `pinecone`, `qdrant`) over `boxvector` (in-memory only).
 - Configure providers and API keys via environment variables, not hardcoded values.
+- Expose agents to external platforms with `route( ... ).toAiGateway()` rather than hand-rolling webhook handlers — it registers the handshake, events, interactions and info routes together (ColdBox 8.2.0+).
+- Always pass a `session` to `toAiGateway()` when inbound messages should reach an agent; without one the route only verifies and parses.
 - See https://ai.ortusbooks.com/ for the full SDK reference including advanced agents, sub-agents, and MCP integration.

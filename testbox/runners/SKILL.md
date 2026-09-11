@@ -1,6 +1,6 @@
 ---
 name: testbox-runners
-description: "Use this skill when running TestBox tests: CommandBox CLI (testbox run), BoxLang CLI (./testbox/run), HTML web runner, programmatic TestBox instantiation (run/runRaw/runRemote), configuring test directories or bundles, using the streaming runner (--stream flag / StreamingRunner), watcher mode, all CLI flags (--show-failed-only, --dry-run, --slow-threshold-ms, --stacktrace, --max-failures), or setting up box.json testbox configuration."
+description: "Use this skill when running TestBox tests: CommandBox CLI (testbox run), BoxLang CLI (./testbox/run), HTML web runner, programmatic TestBox instantiation (run/runRaw/runRemote), configuring test directories or bundles, using the streaming runner (--stream flag / StreamingRunner), watcher mode, all CLI flags (--show-failed-only, --dry-run, --slow-threshold-ms, --stacktrace, --max-failures), toggling code coverage with the coverageEnabled URL parameter (opt-in since TestBox 7.1), or setting up box.json testbox configuration."
 applyTo: "**/tests/**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
@@ -258,6 +258,23 @@ Create `tests/runner.cfm` (or `tests/runner.cfm`):
     ).run()
 </cfscript>
 ```
+
+### Coverage on the Web Runners (`coverageEnabled`)
+
+`HTMLRunner.cfm` and `StreamingRunner.cfm` accept a `coverageEnabled` URL parameter. **Since
+TestBox 7.1 it defaults to `false`** — it used to default to `true`, so every browser run paid
+the instrumentation cost. Coverage is now opt-in:
+
+```
+# No coverage — the default
+http://localhost:8080/tests/runner.cfm
+
+# Turn coverage on for this run (requires FusionReactor)
+http://localhost:8080/tests/runner.cfm?coverageEnabled=true
+```
+
+> Coverage configured in `box.json` or passed as `options.coverage` to `new TestBox()` is
+> unaffected — this default applies only to the URL parameter.
 
 ---
 
