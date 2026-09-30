@@ -81,7 +81,11 @@ class ColdBox extends coldbox.system.Coldbox {
 
             // ColdBox settings
             handlersIndexAutoReload  : true,          // Development only
-            modulesExternalLocation  : [ "modules" ]
+            modulesExternalLocation  : [ "modules" ],
+
+            // Caches the filesystem lookups that locate view/layout files (ColdBox 8.2.0+).
+            // On by default; independent of view *output* caching (viewCaching/renderView(cache=true)).
+            viewDiscoveryCaching     : true
         }
 
         // =============================================
@@ -257,7 +261,11 @@ component extends="coldbox.system.Coldbox" {
 
             // ColdBox settings
             handlersIndexAutoReload  : true,          // Development only
-            modulesExternalLocation  : [ "modules" ]
+            modulesExternalLocation  : [ "modules" ],
+
+            // Caches the filesystem lookups that locate view/layout files (ColdBox 8.2.0+).
+            // On by default; independent of view *output* caching (viewCaching/renderView(cache=true)).
+            viewDiscoveryCaching     : true
         }
 
         // =============================================
@@ -439,3 +447,4 @@ moduleSettings = {
 - Use `moduleSettings` to override module defaults instead of editing module code
 - Configure dedicated `logbox` appenders per environment (verbose in dev, file-only in production)
 - Store LogBox categories that match your application package structure for granular logging control
+- Leave `viewDiscoveryCaching` on (its default, ColdBox 8.2.0+) even when `viewCaching` is off — it only caches the filesystem lookup for view/layout files, not their rendered output

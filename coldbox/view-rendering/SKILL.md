@@ -216,6 +216,11 @@ function catalogList( event, rc, prc ) {
 )#
 ```
 
+> **ColdBox 8.2.0+**: the `viewDiscoveryCaching` setting (on by default, see
+> [`coldbox-configuration`](../configuration/SKILL.md)) caches the *filesystem lookup* that locates
+> a view/layout file — separate from and always-on regardless of the output caching above, which
+> caches the *rendered result*.
+
 ## Rendering No Layout (Partials/Streams)
 
 ```boxlang

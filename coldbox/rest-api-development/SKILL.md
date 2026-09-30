@@ -1,6 +1,6 @@
 ---
 name: coldbox-rest-api-development
-description: "Use this skill when building RESTful APIs in ColdBox using RestHandler, creating CRUD API endpoints, implementing API versioning, handling JWT/bearer token authentication, building structured error responses, or creating resource representations with mementos."
+description: "Use this skill when building RESTful APIs in ColdBox using RestHandler, creating CRUD API endpoints, implementing API versioning, handling JWT/bearer token authentication, building structured error responses, using the Response object's fluent builders (setData() message/location, withETag(), withCacheControl()), adding HTTP caching to responses, or creating resource representations with mementos."
 applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
@@ -318,6 +318,43 @@ component extends="coldbox.system.RestHandler" {
 }
 ```
 
+## The Response Object — Fluent Builders & HTTP Caching
+
+*ColdBox 8.2.0+.* Alongside `event.renderData()`, ColdBox exposes a `Response` object with fluent
+builder methods — useful when a response needs several optional pieces assembled conditionally:
+
+```boxlang
+function create( event, rc, prc ) {
+    var user = userService.create( event.getHTTPContent( json = true ) )
+
+    // setData() gains message and location arguments
+    event.getResponse()
+        .setData( data: user.getMemento(), message: "User created", location: buildLink( "users.show", { id: user.getId() } ) )
+        .setStatusCode( 201 )
+
+    event.render()
+}
+
+function show( event, rc, prc ) {
+    var user = userService.getById( rc.id ?: 0 )
+
+    // Fluent HTTP caching primitives — same semantics as event.etag()/event.cacheControl()
+    event.getResponse()
+        .setData( user.getMemento() )
+        .withETag( user.getHash() )
+        .withCacheControl( { "max-age": 60, "private": true } )
+
+    event.render()
+}
+```
+
+`withETag()`/`withCacheControl()` mirror `event.etag()`/`event.cacheControl()` (see
+[`coldbox-request-context`](../request-context/SKILL.md)) but as chainable methods on the response
+object itself, which composes better when a handler builds the response across several
+conditional branches. See also `Router.withCache()` in
+[`coldbox-routing-development`](../routing-development/SKILL.md) for declaring the same caching
+rules at the route level instead of inside the handler.
+
 ## API Module Configuration
 
 ```boxlang
@@ -623,3 +660,4 @@ function index( event, rc, prc ) {
 - Validate inputs before processing — return 422 with errors structure
 - Secure endpoints with JWT + cbSecurity `@secured` annotations
 - Use CORS interceptors for cross-origin access
+- Use the `Response` object's fluent builders (`withETag()`, `withCacheControl()`, ColdBox 8.2.0+) when a response is assembled across multiple conditional branches

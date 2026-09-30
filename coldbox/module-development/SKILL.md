@@ -70,7 +70,7 @@ class ModuleConfig {
     property name="author"          default="Your Name";
     property name="webURL"          default="https://example.com";
     property name="entryPoint"      default="mymodule";
-    property name="cfmapping"       default="myModule";
+    property name="classMapping"    default="myModule";
     property name="autoMapModels"   default="true";
 
     // ======================================================
@@ -123,6 +123,10 @@ class ModuleConfig {
 }
 ```
 
+> **ColdBox 8.1.0 deprecation:** `this.cfmapping` is deprecated in favor of `this.classMapping`,
+> which works identically on both CFML and BoxLang runtimes. `cfmapping` still works for backward
+> compatibility, but new modules should use `classMapping`.
+
 **CFML (`.cfc`):**
 
 ```cfml
@@ -137,7 +141,7 @@ component {
     property name="author"          default="Your Name";
     property name="webURL"          default="https://example.com";
     property name="entryPoint"      default="mymodule";
-    property name="cfmapping"       default="myModule";
+    property name="classMapping"    default="myModule";
     property name="autoMapModels"   default="true";
 
     // ======================================================
@@ -444,17 +448,19 @@ component extends="coldbox.system.Interceptor" {
 // modules_app/myModule/ModuleConfig.cfc
 class ModuleConfig {
 
+    // Exposes a stable, dedicated CF mapping for the module (ColdBox 8.1.0+: prefer classMapping
+    // over the deprecated cfmapping)
+    property name="classMapping" default="/mymodule";
+
     function configure() {
-        settings = {
-            cfmapping : "/mymodule"
-        }
+        // ...
     }
 }
 ```
 
 Use module helpers and CF mappings intentionally:
 - Add module-level or handler-level helper templates for reusable view logic that belongs to the module
-- Expose a dedicated CF mapping when external code needs stable access to module assets or classes
+- Expose a dedicated CF mapping (`classMapping`) when external code needs stable access to module assets or classes
 - Keep helpers presentation-focused; do not move service/business logic into helper files
 
 ## Module WireBox Binder

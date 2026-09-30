@@ -1,6 +1,6 @@
 ---
 name: coldbox-testing-handler
-description: "Use this skill when testing ColdBox event handlers with execute(), asserting rc/prc collections, verifying view selection and rendered output, mocking relocations, testing renderData() and getHandlerResults(), setting HTTP methods and headers, injecting mocks into handlers, or using BaseHandlerTest for isolated handler unit tests."
+description: "Use this skill when testing ColdBox event handlers with execute(), asserting rc/prc collections, verifying view selection and rendered output, mocking relocations, mocking the incoming request body with execute()'s body argument, testing renderData() and getHandlerResults(), setting HTTP methods and headers, injecting mocks into handlers, or using BaseHandlerTest for isolated handler unit tests."
 applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
@@ -98,6 +98,7 @@ class extends="coldbox.system.testing.BaseTestCase" appMapping="/root" {
 | `renderResults` | boolean | `false` | Render output and store in `cbox_rendered_content` |
 | `withExceptionHandling` | boolean | `false` | Route errors through ColdBox exception handling |
 | `domain` | string | `cgi.server_name` | Simulate a specific domain |
+| `body` | any | `""` | Mocks the incoming request body (ColdBox 8.2.0+) — same idea as `body` on the HTTP method helpers, see [`coldbox-testing-http-methods`](../testing-http-methods/SKILL.md) |
 
 ---
 
@@ -144,6 +145,28 @@ function data( event, rc, prc ) {
 var event = execute( event = "main.data", renderResults = true )
 expect( event.getRenderData().type ).toBe( "json" )
 expect( event.getPrivateValue( "cbox_renderdata" ).type ).toBe( "json" )
+```
+
+### Mocking the Request Body
+
+*ColdBox 8.2.0+.* Pass `body` to `execute()` to simulate an incoming JSON/raw payload without going
+through the routing layer — useful for testing a handler action directly via its event name:
+
+```boxlang
+// handler
+function create( event, rc, prc ) {
+    var payload = event.getHTTPContent( json = true )
+    prc.user    = userService.create( payload )
+    event.renderData( data = prc.user.getMemento(), statusCode = 201 )
+}
+
+// spec
+var event = execute(
+    event         = "users.create",
+    body          = { name: "Alice", email: "alice@example.com" },
+    renderResults = true
+)
+expect( event.getResponse() ).toHaveStatus( 201 )
 ```
 
 ### HTTP Status Code

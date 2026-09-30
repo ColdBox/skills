@@ -1,6 +1,6 @@
 ---
 name: coldbox-scheduled-tasks
-description: "Use this skill when creating ColdBox scheduled tasks, building Scheduler.cfc files, registering task frequencies, preventing overlapping runs with withNoOverlaps(), constraining tasks to a time-of-day window with between()/startOnTime()/endOnTime(), managing task life-cycles (before/after/onFailure/onSuccess), using server fixation for clustered apps, or configuring module schedulers."
+description: "Use this skill when creating ColdBox scheduled tasks, building Scheduler.cfc files, registering task frequencies, preventing overlapping runs with withNoOverlaps(), constraining tasks to a time-of-day window with between()/startOnTime()/endOnTime(), managing task life-cycles (before/after/onFailure/onSuccess), checking scheduler state via started/startedAt, using server fixation for clustered apps, or configuring module schedulers."
 applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
@@ -288,6 +288,21 @@ myTask.enable()
 xtask( "Disabled Task" )
     .call( () => doWork() )
     .everyMinute()
+```
+
+## Checking Scheduler State
+
+*ColdBox 8.1.0+.* The scheduler itself exposes `started` (boolean) and `startedAt` (datetime)
+properties, so you can check whether it's running and when it started — useful for health checks
+and cluster-aware task management:
+
+```javascript
+// From anywhere with access to the scheduler instance
+var scheduler = getInstance( "appScheduler@coldbox" )
+
+if ( scheduler.getStarted() ) {
+    log.info( "Scheduler running since #scheduler.getStartedAt()#" )
+}
 ```
 
 ## Module Scheduler
