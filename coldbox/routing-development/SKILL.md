@@ -1,6 +1,6 @@
 ---
 name: coldbox-routing-development
-description: "Use this skill when configuring ColdBox routes, setting up RESTful resource routes, creating route groups, implementing URL pattern matching with constraints, defining named routes, answering a route inline with a toResponse() closure, exposing BoxLang AI surfaces with the toAi(), toMCP() and toAiGateway() route terminators, or working with Router.cfc in a ColdBox application."
+description: "Use this skill when configuring ColdBox routes, setting up RESTful resource routes, creating route groups, implementing URL pattern matching with constraints, defining named routes, answering a route inline with a toResponse() closure, attaching route-scoped middleware with .middleware()/middlewareGroup()/.withoutMiddleware(), declaring route-level cache rules with Router.withCache(), streaming a route with Router.toSSE(), exposing BoxLang AI surfaces with the toAi(), toMCP() and toAiGateway() route terminators, or working with Router.cfc in a ColdBox application."
 applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
@@ -151,6 +151,11 @@ group(
     route( "/profile", "dashboard.profile" )
 }
 ```
+
+> The `middleware` key above is a **group-level** option that names an interceptor/target list
+> applied to every route in the group. **ColdBox 8.2.0** adds a fluent, route-scoped alternative —
+> see [Route-Scoped Middleware](#route-scoped-middleware) below — that can target a single route and
+> supports closures directly, not just registered names.
 
 ## Routes with Constraints
 
@@ -330,6 +335,92 @@ route( "/api/orders/:id" ).toResponse( ( event, rc, prc ) => {
 
 ---
 
+## Route-Scoped Middleware
+
+*ColdBox 8.2.0+.* Attach middleware directly to a single route instead of relying solely on
+app-wide interceptors. `.middleware()` reuses the same dispatch mechanism ColdBox interceptors
+already use (`preProcess` by default, or `postProcess`), just scoped to one route:
+
+```boxlang
+route( "/admin/:action" )
+    .middleware( ( event, rc, prc ) => {
+        if ( !auth.isLoggedIn() ) {
+            event.relocate( "login" )
+            return true // short-circuits the rest of this route's middleware
+        }
+    } )
+    .toHandler( "admin" )
+```
+
+A middleware target can be:
+- A **closure** — `( event, rc, prc ) => { ... }`
+- A **WireBox ID string** — resolved lazily at request time
+- Any **object** with a method named after the interception point (`preProcess` by default)
+
+### Named, Reusable Middleware Groups
+
+`middlewareGroup( name, [ ...targets ] )` registers a bundle once; reference it by name from
+`.middleware()` or a `group()`'s `middleware` option instead of repeating the target list:
+
+```boxlang
+middlewareGroup( "api", [ "RequireApiKey", "RateLimiter" ] )
+
+group( { pattern: "/api", middleware: [ "api" ] }, () => {
+    route( "/users" ).toHandler( "users" )                              // runs "api"
+    route( "/health" ).withoutMiddleware( "api" ).toHandler( "health" ) // opts out
+} )
+```
+
+`.withoutMiddleware( target )` opts a single route out of middleware it would otherwise inherit —
+by target name, by the group name it expanded from, or `"*"` for everything:
+
+```boxlang
+route( "/health" ).withoutMiddleware( "*" ).toHandler( "health" )
+```
+
+---
+
+## Route-Level Cache Rules — `Router.withCache()`
+
+*ColdBox 8.2.0+.* A route-scoped alternative to handler `cache="true"` annotations, so caching can
+be declared where the URL is declared instead of buried on the handler action. Accepts the same
+knobs as the handler annotations — `timeout`, `provider`, `suffix`, `include`/`exclude`/`filter` —
+plus the HTTP caching primitives `etag`, `etagWeak`, `lastModified`, and `cacheControl`:
+
+```boxlang
+route( "/products/:id" )
+    .withCache( timeout: 30, etag: true )
+    .toHandler( "products.show" )
+```
+
+A route that opts in with `.withCache()` takes full precedence over that event's handler-level
+`cache="true"` annotations; routes that don't opt in fall through unchanged. See the
+[`coldbox-cache-integration`](../cache-integration/SKILL.md) skill for the underlying annotations
+and [`coldbox-rest-api-development`](../rest-api-development/SKILL.md) for the `etag`/`lastModified`
+primitives themselves.
+
+---
+
+## Streaming Routes — `Router.toSSE()`
+
+*ColdBox 8.2.0+. BoxLang only.* For a route that always answers with Server-Sent Events, `toSSE()`
+mirrors `toResponse()`, taking a callback that receives an `SSEEmitter`:
+
+```boxlang
+route( "/notifications/stream" ).toSSE( ( event, rc, prc, emitter ) => {
+    while ( emitter.isOpen() ) {
+        emitter.send( { "ts": now() }, "tick" )
+        sleep( 1000 )
+    }
+} )
+```
+
+See the dedicated [`coldbox-sse-streaming`](../sse-streaming/SKILL.md) skill for `event.sse()`,
+`SSEEmitter`'s full API, the `preSSEConnection`/`postSSEConnection`/`onSSEError` interception
+points, and the `this.sse` settings block.
+
+---
+
 ## BoxLang AI Route Terminators
 
 > **BoxLang only.** `toAi()`, `toMCP()` and `toAiGateway()` all require BoxLang and the `bxai`
@@ -337,9 +428,78 @@ route( "/api/orders/:id" ).toResponse( ( event, rc, prc ) => {
 
 | Terminator | Exposes |
 |---|---|
-| `toAi( ... )` | A chat/completion endpoint over HTTP |
-| `toMCP( ... )` | A Model Context Protocol server |
+| `toAi( runnable )` | Four auto-scaffolded REST endpoints over an `IAiRunnable` (**ColdBox 8.1.0+**) |
+| `toMCP( [serverName] )` | A Model Context Protocol server over HTTP (**ColdBox 8.1.0+**) |
 | `toAiGateway( [gateway], [session] )` | A BoxLang AI Gateway — platform webhooks, human-in-the-loop approvals, and gateway info (**ColdBox 8.2.0+**) |
+
+### `toAi()` — Auto-Scaffolded AI REST API
+
+*ColdBox 8.1.0+.* Calling `.toAi( runnable )` on any route pattern registers **four sub-endpoints**
+in one line — think of it as the AI equivalent of `resources()`:
+
+| Verb | Endpoint | Description |
+|---|---|---|
+| `POST` | `{base}/invoke` | Synchronous execution — calls `runnable.run( input, params, options )` and returns JSON |
+| `POST` | `{base}/stream` | SSE streaming — calls `runnable.stream()` and pushes chunks |
+| `POST` | `{base}/batch` | Batch execution — runs the runnable over an array of `inputs[]` in parallel |
+| `GET` | `{base}/info` | Self-describing metadata — runnable name, description, and generated endpoints |
+
+`runnable` can be a **WireBox ID string** (resolved lazily at request time) or a **live
+`IAiRunnable` instance**. Route modifiers chained before `toAi()` — conditions, domain
+restrictions, SSL, headers — are inherited by every sub-route:
+
+```boxlang
+// One line → four REST endpoints for your AI agent
+route( "/api/chat" ).toAi( "MyChatAgent" )
+
+// Using a direct WireBox instance
+route( "/api/embeddings" ).toAi( getInstance( "EmbeddingRunnable" ) )
+
+// With auth guard inherited by all four sub-routes
+route( "/api/chat" )
+    .withCondition( ( route, params, event ) => event.isAuthenticated() )
+    .toAi( "MyChatAgent" )
+```
+
+The `invoke` endpoint accepts a JSON body with `input`, `params`, and `options` keys. `batch`
+accepts an `inputs[]` array and returns an `outputs[]` array with per-item error recovery.
+
+**ColdBox 8.2.0+** — `invoke`/`stream`/`batch` also resolve `userId`, `conversationId`, and
+`threadId` from the request body and thread them into `options`:
+
+- `userId` defaults to the framework's own session/request tracking identifier when not supplied
+- `conversationId` is passed through only if supplied — no default is invented
+- `threadId` is generated if not supplied, and is **always** echoed back — in the JSON response, an
+  `X-Thread-Id` header, and a leading `event: thread` SSE frame on `/stream` (browser `EventSource`
+  clients can't read response headers)
+
+```boxlang
+// POST /api/chat/invoke  { "input": "hi", "threadId": "t-123" }
+// → runnable.run( "hi", {}, { userId: "<session id>", threadId: "t-123" } )
+// → { "output": ..., "success": true, "threadId": "t-123" }
+```
+
+See the [`coldbox-ai-integration`](../ai-integration/SKILL.md) skill for building the
+`IAiRunnable` behind the mount.
+
+### `toMCP()` — Expose an MCP Server Over HTTP
+
+*ColdBox 8.1.0+.* Exposes a registered BoxLang **Model Context Protocol (MCP) server** as an HTTP
+endpoint any MCP-compatible AI client (Claude, GitHub Copilot, Cursor, etc.) can connect to. The
+entire HTTP request is delegated to the server's `MCPRequestProcessor`:
+
+```boxlang
+// Expose a named MCP server on a fixed route
+route( "/mcp/filesystem" ).toMCP( "FileSystemServer" )
+
+// With an auth condition
+route( "/mcp/database" )
+    .withCondition( ( route, params, event ) => event.isAuthenticated() )
+    .toMCP( "DatabaseServer" )
+
+// Dynamic — resolve the server name from the :mcpServer URL placeholder
+route( "/mcp/:mcpServer" ).toMCP()
+```
 
 ### `toAiGateway()` — Mounting an AI Gateway over HTTP
 
@@ -428,3 +588,7 @@ session that sit behind the mount.
 - Separate API routing via modules for cleaner organization
 - Use `toResponse()` for trivial endpoints, but move to a handler once there is logic to test
 - Mount AI gateways with `toAiGateway()` rather than hand-registering the five sub-routes
+- Use route-scoped `.middleware()` (8.2.0+) for logic specific to one route; use interceptors or
+  `group()`-level `middleware` for cross-cutting, app-wide concerns
+- Prefer `Router.withCache()` (8.2.0+) over handler `cache="true"` annotations when caching is a
+  routing concern (e.g. varying cache rules by route pattern rather than by handler)

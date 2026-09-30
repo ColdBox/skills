@@ -1,6 +1,6 @@
 ---
 name: coldbox-request-context
-description: "Use this skill when working with the ColdBox RequestContext object (event), managing rc and prc collections, building URLs with buildLink(), detecting HTTP methods, accessing request metadata, working with flash scope, handling AJAX requests, or reading HTTP headers and body content."
+description: "Use this skill when working with the ColdBox RequestContext object (event), managing rc and prc collections, building URLs with buildLink(), detecting HTTP methods, reading the original un-spoofed HTTP verb with getOriginalHTTPMethod(), setting HTTP caching primitives (etag/lastModified/cacheControl), accessing request metadata, working with flash scope, handling AJAX requests, or reading HTTP headers and body content."
 applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
@@ -90,6 +90,9 @@ function processRequest( event, rc, prc ) {
     event.isHead()
     event.isOptions()
 
+    // The raw, un-spoofed transport verb (ColdBox 8.2.0+) — see the method-spoofing note below
+    var realMethod = event.getOriginalHTTPMethod()
+
     // Request metadata
     event.isAjax()
     event.isSSL()
@@ -121,6 +124,66 @@ function processRequest( event, rc, prc ) {
     }
 }
 ```
+
+## HTTP Method Spoofing
+
+HTML forms only support `GET`/`POST`, so ColdBox lets you fake `PUT`/`PATCH`/`DELETE` with a
+`_method` form field. `event.getHTTPMethod()` returns the spoofed verb; `event.getOriginalHTTPMethod()`
+always returns the real transport-level verb.
+
+```html
+<form method="POST" action="/users/1">
+    <input type="hidden" name="_method" value="DELETE">
+</form>
+```
+
+> **ColdBox 8.2.0 security fix:** `_method` is now only honored when the *real* transport-level
+> request is a `POST`. Before 8.2.0, a plain `GET` request carrying `?_method=DELETE` was silently
+> treated as a `DELETE` — enabling CSRF-style attacks via a link, an `<img>` tag, a crawler, or a
+> browser prefetch. If you need the raw un-spoofed verb for logging or auditing regardless of this
+> hardening, use `event.getOriginalHTTPMethod()`.
+
+## HTTP Caching Primitives — ETag, Last-Modified, Cache-Control
+
+*ColdBox 8.2.0+.* Standards-based conditional-GET support, usable from any handler:
+
+```boxlang
+function show( event, rc, prc ) {
+    prc.product = productService.get( rc.id )
+
+    // Sets the ETag header and short-circuits with 304 Not Modified on a match.
+    // Never short-circuits an unsafe HTTP method (POST/PUT/PATCH/DELETE).
+    if( event.etag( prc.product.getHash() ) ){
+        return // 304 already sent — nothing left to do
+    }
+
+    event.setView( "products/show" )
+}
+
+function download( event, rc, prc ) {
+    prc.file = fileService.get( rc.id )
+
+    if( event.lastModified( prc.file.getModifiedDate() ) ){
+        return
+    }
+
+    event.renderData( data: prc.file.getContents(), type: "binary" )
+}
+
+function list( event, rc, prc ) {
+    // Build a Cache-Control header from a directives struct
+    event.cacheControl( { "max-age": 300, "public": true } )
+    prc.products = productService.list()
+    event.setView( "products/index" )
+}
+```
+
+For REST handlers, the same primitives are available as fluent methods on the `Response` object —
+see [`coldbox-rest-api-development`](../rest-api-development/SKILL.md). An event handler action
+already using `cache="true"` can opt into an **automatically computed** ETag/Last-Modified with
+`etag`/`etagWeak`/`lastModified`/`cacheControl` annotations — see
+[`coldbox-cache-integration`](../cache-integration/SKILL.md). Route-level equivalents are available
+via `Router.withCache()` — see [`coldbox-routing-development`](../routing-development/SKILL.md).
 
 ## Response Control
 
@@ -247,3 +310,5 @@ function index( event, rc, prc ) {
 - Use `flash` scope only for one-request data after redirects (PRG pattern)
 - Use `buildLink()` instead of hard-coded URLs in templates and handlers
 - Call `event.noRender()` before returning from async-triggered actions with no response
+- Use `event.etag()`/`event.lastModified()` (ColdBox 8.2.0+) for conditional-GET caching instead of hand-rolling `If-None-Match`/`If-Modified-Since` checks
+- Use `event.getOriginalHTTPMethod()` when you need the real transport verb regardless of `_method` spoofing

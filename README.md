@@ -84,7 +84,7 @@ The [`.claude-plugin/plugin.json`](./.claude-plugin/plugin.json) registers these
 | Skill | What It Covers |
 |---|---|
 | [`handler-development`](./coldbox/handler-development/SKILL.md) | Handlers, CRUD actions, REST handlers, dependency injection |
-| [`routing-development`](./coldbox/routing-development/SKILL.md) | Router configuration, named routes, constraints, route groups |
+| [`routing-development`](./coldbox/routing-development/SKILL.md) | Router configuration, named routes, constraints, route groups, route-scoped middleware, `Router.withCache()`, `toAi()`/`toMCP()`/`toAiGateway()`/`toSSE()` terminators |
 | [`event-model`](./coldbox/event-model/SKILL.md) | Event lifecycle, `event`, `rc`, `prc`, rendering and redirects |
 | [`rest-api-development`](./coldbox/rest-api-development/SKILL.md) | RestHandler patterns, API validation, versioning, error handling |
 | [`interceptor-development`](./coldbox/interceptor-development/SKILL.md) | Interceptors, framework interception points, custom events |
@@ -102,7 +102,8 @@ The [`.claude-plugin/plugin.json`](./.claude-plugin/plugin.json) registers these
 | [`decorators`](./coldbox/decorators/SKILL.md) | ControllerDecorator, RequestContextDecorator, extending framework internals |
 | [`coldbox-proxy`](./coldbox/coldbox-proxy/SKILL.md) | ColdBox Proxy objects for web services, Flex/AIR, event gateways, CFC data binding |
 | [`logging`](./coldbox/logging/SKILL.md) | LogBox in ColdBox, per-environment levels, WireBox logbox DSL, proxy logging |
-| [`ai-integration`](./coldbox/ai-integration/SKILL.md) | bx-ai module, chat, streaming, pipelines, agents, RAG/vector memory, tool calling |
+| [`ai-integration`](./coldbox/ai-integration/SKILL.md) | bx-ai module, chat, streaming, pipelines, agents, RAG/vector memory, tool calling, `toAi()`/`toAiGateway()` route terminators |
+| [`sse-streaming`](./coldbox/sse-streaming/SKILL.md) | Server-Sent Events: `event.sse()`, `SSEEmitter`, `Router.toSSE()`, SSE interception points, `this.sse` settings |
 | [`coldbox-cli`](./coldbox/coldbox-cli/SKILL.md) | `coldbox create` workflows, app skeletons, language flags, scaffolding |
 | [`coldbox-documenter`](./coldbox/coldbox-documenter/SKILL.md) | Documentation standards for handlers, models, modules, config files |
 | [`coldbox-reviewer`](./coldbox/coldbox-reviewer/SKILL.md) | Code review heuristics for ColdBox applications and modules |

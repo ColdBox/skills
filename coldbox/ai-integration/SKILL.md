@@ -1,6 +1,6 @@
 ---
 name: coldbox-ai-integration
-description: "Use this skill when integrating AI capabilities into a ColdBox application using the BoxLang AI library (bx-ai module) -- including simple chat, streaming, pipelines, agents, RAG with vector memory, document loading, tool calling, exposing an AI Gateway over HTTP with route( ... ).toAiGateway() for platform webhooks and human-in-the-loop approvals, and injecting the AI service into handlers or models."
+description: "Use this skill when integrating AI capabilities into a ColdBox application using the BoxLang AI library (bx-ai module) -- including simple chat, streaming (see coldbox-sse-streaming for first-class SSE), pipelines, agents, RAG with vector memory, document loading, tool calling, auto-scaffolding a REST API for an IAiRunnable with route( ... ).toAi(), exposing an AI Gateway over HTTP with route( ... ).toAiGateway() for platform webhooks and human-in-the-loop approvals, and injecting the AI service into handlers or models."
 applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
@@ -133,21 +133,28 @@ class ContentHandler extends coldbox.system.EventHandler {
         event.setView( "content/summary" )
     }
 
-    // Streaming via SSE
+    // Streaming via first-class SSE (ColdBox 8.2.0+) — see coldbox-sse-streaming skill
     function streamSummary( event, rc, prc ) {
-        event.renderData( type: "plain", data: "" )
-        aiChatStream(
-            "Summarize: #rc.content#",
-            ( chunk ) => {
-                var token = chunk.choices?.first()?.delta?.content ?: ""
-                // write to output buffer
-                writeOutput( token )
-                flushOutput()
-            }
-        )
+        event.sse( ( emitter ) => {
+            aiChatStream(
+                "Summarize: #rc.content#",
+                ( chunk ) => {
+                    var token = chunk.choices?.first()?.delta?.content ?: ""
+                    if ( len( token ) && emitter.isOpen() ) {
+                        emitter.send( token, "token" )
+                    }
+                }
+            )
+        } )
     }
 }
 ```
+
+> On ColdBox 8.1 and earlier (no `event.sse()`), stream plain text manually with
+> `event.renderData( type: "plain", data: "" )` followed by `writeOutput()`/`flushOutput()` inside
+> the `aiChatStream()` callback — this is not real SSE framing, just a chunked plain-text response.
+> `toAi()`'s own `/stream` sub-route (below) is the preferred way to stream a runnable's output and
+> already uses proper SSE framing regardless of ColdBox version.
 
 ## AI Pipelines
 
@@ -263,6 +270,76 @@ var assistant = aiAgent()
 var response1 = assistant.chat( "How do I create an interceptor?" )
 var response2 = assistant.chat( "Can you show me a security example?" )  // remembers context
 ```
+
+## Exposing a Runnable as a REST API — `toAi()`
+
+*ColdBox 8.1.0+. BoxLang only; requires `bxai`.*
+
+`route( ... ).toAi( runnable )` is the AI equivalent of `resources()` — one line scaffolds a
+complete, standardized REST API for any `IAiRunnable`:
+
+```boxlang
+// config/Router.cfc
+class Router extends coldbox.system.web.routing.Router {
+
+    function configure() {
+        // WireBox ID, resolved lazily at request time
+        route( "/api/chat" ).toAi( "MyChatAgent" )
+
+        // Or a live instance
+        route( "/api/embeddings" ).toAi( getInstance( "EmbeddingRunnable" ) )
+    }
+
+}
+```
+
+That registers four endpoints: `POST {base}/invoke` (synchronous), `POST {base}/stream` (SSE),
+`POST {base}/batch` (parallel array of `inputs[]`), and `GET {base}/info` (self-describing
+metadata). An `IAiRunnable` implements `run( input, params, options )` and, for streaming,
+`stream( input, params, options )`:
+
+```boxlang
+// models/MyChatAgent.bx
+class implements="bxai.models.ai.IAiRunnable" {
+
+    function run( input, params, options ) {
+        return aiChat( input, { temperature: params.temperature ?: 0.7 } )
+    }
+
+    function stream( input, params, options, callback ) {
+        aiChatStream( input, callback )
+    }
+
+}
+```
+
+**ColdBox 8.2.0+ — conversational context.** The `invoke`/`stream`/`batch` endpoints resolve
+`userId`, `conversationId`, and `threadId` from the request body and thread them into `options`:
+
+```boxlang
+// POST /api/chat/invoke  { "input": "hi", "threadId": "t-123" }
+// → run( "hi", {}, { userId: "<session id>", threadId: "t-123" } )
+// → { "output": ..., "success": true, "threadId": "t-123" }
+
+function run( input, params, options ) {
+    var reply = aiChat( input, { memory: aiMemory(
+        type           : "windowed",
+        userId         : options.userId,
+        conversationId : options.conversationId ?: options.threadId
+    ) } )
+    return reply
+}
+```
+
+`threadId` is generated when not supplied by the caller and is **always** echoed back — in the
+JSON response, an `X-Thread-Id` header, and (since browser `EventSource` clients can't read
+response headers) a leading `event: thread` SSE frame on `/stream`. `userId` defaults to the
+framework's session/request tracking identifier; `conversationId` is only set when the caller
+supplies it — no default is invented.
+
+> See the [`coldbox-routing-development`](../routing-development/SKILL.md) skill for route naming
+> and modifier inheritance (auth conditions, domains, SSL) shared with `toMCP()` and
+> `toAiGateway()`.
 
 ## Exposing an Agent to a Platform — AI Gateways
 
@@ -383,6 +460,8 @@ var embedding = aiEmbed( "How does WireBox injection work?" )
 - Use `aiMemory( type: "windowed" )` with explicit `userId` + `conversationId` for multi-tenant isolation.
 - For production RAG, prefer a persistent vector store (`postgres`, `pinecone`, `qdrant`) over `boxvector` (in-memory only).
 - Configure providers and API keys via environment variables, not hardcoded values.
+- Scaffold a REST API for a runnable with `route( ... ).toAi()` (ColdBox 8.1.0+) rather than hand-building invoke/stream/batch/info endpoints yourself.
+- Pass `threadId` through `toAi()`'s conversational context (ColdBox 8.2.0+) to correlate multi-turn conversations instead of inventing your own session key.
 - Expose agents to external platforms with `route( ... ).toAiGateway()` rather than hand-rolling webhook handlers — it registers the handshake, events, interactions and info routes together (ColdBox 8.2.0+).
 - Always pass a `session` to `toAiGateway()` when inbound messages should reach an agent; without one the route only verifies and parses.
 - See https://ai.ortusbooks.com/ for the full SDK reference including advanced agents, sub-agents, and MCP integration.

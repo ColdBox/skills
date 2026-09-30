@@ -179,6 +179,10 @@ function processRequest( event, rc, prc ) {
 }
 ```
 
+> See [`coldbox-request-context`](../request-context/SKILL.md) for `event.getOriginalHTTPMethod()`
+> (the hardened `_method` spoofing rule, ColdBox 8.2.0+) and the `event.etag()`/`event.lastModified()`/
+> `event.cacheControl()` HTTP caching primitives (ColdBox 8.2.0+).
+
 ## Response Headers and Status
 
 ```boxlang

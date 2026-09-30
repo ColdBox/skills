@@ -1,6 +1,6 @@
 ---
 name: coldbox-interceptor-development
-description: "Use this skill when creating ColdBox interceptors for cross-cutting concerns, listening to framework lifecycle events, implementing security checks, logging, CORS, rate limiting, request/response transformation, or firing and listening to custom interception points."
+description: "Use this skill when creating ColdBox interceptors for cross-cutting concerns, listening to framework lifecycle events, implementing security checks, logging, CORS, rate limiting, request/response transformation, firing and listening to custom interception points, or detecting whether announce() was short-circuited by a listener."
 applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
@@ -455,6 +455,42 @@ component extends="coldbox.system.Interceptor" {
 }
 ```
 
+## Detecting a Short-Circuit
+
+*ColdBox 8.2.0+.* `announce()` now returns `true` on the synchronous path when an interceptor
+short-circuited the chain (by returning `true` from a listener), and `false` otherwise —
+previously this was undetectable from the calling code:
+
+```boxlang
+function create( data ) {
+    var user = userRepository.create( data )
+
+    var wasShortCircuited = announce( "onUserCreated", { user: user } )
+
+    if ( wasShortCircuited ) {
+        // some listener returned true and stopped the remaining listeners from running
+        log.warn( "onUserCreated chain was short-circuited" )
+    }
+
+    return user
+}
+```
+
+A listener short-circuits by returning `true` — this is the same mechanism `preProcess` already
+uses to halt a request (e.g. after calling `relocate()`).
+
+## Route Table Introspection
+
+*ColdBox 8.2.0+.* `getRouteDefinitionKeys()` returns the registered route table's keys, useful from
+an interceptor or diagnostic tooling that needs to reason about what routes exist without importing
+the full `Router` object:
+
+```boxlang
+function onException( event, rc, prc, interceptData ) {
+    log.error( "Exception on one of #getRouteDefinitionKeys().len()# registered routes" )
+}
+```
+
 ## Registering Interceptors
 
 ```boxlang
@@ -591,3 +627,4 @@ component extends="coldbox.system.Interceptor" {
 - Use async interceptors for non-blocking email/notification workflows
 - Prefer CBSecurity module over custom security interceptors for auth
 - Log interceptor errors but don't swallow exceptions silently
+- Check `announce()`'s return value (ColdBox 8.2.0+) when calling code needs to know whether a listener short-circuited the chain

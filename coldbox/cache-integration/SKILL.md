@@ -1,6 +1,6 @@
 ---
 name: coldbox-cache-integration
-description: "Use this skill when implementing caching inside a ColdBox application -- configuring CacheBox via ColdBox.cfc or config/CacheBox.cfc, injecting caches with WireBox (cachebox:name), using getCache() in handlers, event output caching with action cache annotations, view fragment caching with renderView(cache=true), query caching, cache listeners as ColdBox interceptors, engine-native providers (BoxLangColdBoxProvider, LuceeColdBoxProvider, CFColdBoxProvider), Redis/distributed provider setup, or choosing between default and template caches."
+description: "Use this skill when implementing caching inside a ColdBox application -- configuring CacheBox via ColdBox.cfc or config/CacheBox.cfc, injecting caches with WireBox (cachebox:name), using getCache() in handlers, event output caching with action cache annotations (including etag/etagWeak/lastModified/cacheControl auto-computed HTTP caching), route-level cache rules with Router.withCache(), view fragment caching with renderView(cache=true), query caching, cache listeners as ColdBox interceptors, engine-native providers (BoxLangColdBoxProvider, LuceeColdBoxProvider, CFColdBoxProvider), Redis/distributed provider setup, or choosing between default and template caches."
 applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
@@ -420,6 +420,25 @@ component extends="coldbox.system.EventHandler" {
 ```
 
 > **Invalidation**: Event caches are keyed by event name + suffix. Clear them via `getCache( "template" ).clearByKeySnippet( "event_name" )` or `getCache( "template" ).clearAll()`.
+
+### 6a. Auto-Computed HTTP Caching on Cached Actions
+
+*ColdBox 8.2.0+.* An action already carrying `cache="true"` can add `etag`, `etagWeak`,
+`lastModified`, and `cacheControl` annotations to get standards-based HTTP caching headers computed
+automatically, piggybacking on event caching with no extra per-request work:
+
+```cfscript
+function show( event, rc, prc ) cache="true" cacheTimeout="60" etag="true" cacheControl="max-age=300" {
+    prc.product = productService.getById( rc.id ?: 0 )
+    event.setView( "products/show" )
+}
+```
+
+For caching decisions made inside handler logic rather than declared as annotations, use
+`event.etag()`/`event.lastModified()`/`event.cacheControl()` directly — see
+[`coldbox-request-context`](../request-context/SKILL.md). For the same rules declared at the route
+level instead of on the handler, see `Router.withCache()` in
+[`coldbox-routing-development`](../routing-development/SKILL.md).
 
 ---
 
