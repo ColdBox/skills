@@ -260,6 +260,8 @@ function emailPreview( event, rc, prc ) {
 - Always use `encodeForHTML()` / `encodeForHTMLAttribute()` for user data
 - Use `prc` for view data (not `rc`) — keep presentation clean
 - Prefix partials with underscore (`_card.cfm`, `_flash.cfm`) by convention
+- In BoxLang partials (`.bxm`), wrap interpolated rendered markup with `<bx:output>...</bx:output>`, in CFML partials (`.cfm`), wrap with `<cfoutput>...</cfoutput>`
+- Keep `bx:param` and `bx:set` declarations outside `<bx:output>` in partials same as CFML `<cfset>` declarations outside `<cfoutput>`
 - Use `renderView()` for partials and composable view fragments
 - Cache views for expensive database-driven content that doesn't change frequently
 - Use `.noLayout()` for AJAX rendered fragments and email previews
