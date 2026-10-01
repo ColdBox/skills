@@ -1,6 +1,6 @@
 {
   "name": "coldbox-agent-skills",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "ColdBox skills for Claude Code — handlers, routing, REST APIs, interceptors, testing, security, ORM, WireBox DI, CacheBox, LogBox, and ContentBox CMS",
   "author": {
     "name": "Ortus Solutions",

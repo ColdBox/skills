@@ -112,28 +112,30 @@ The [`.claude-plugin/plugin.json`](./.claude-plugin/plugin.json) registers these
 
 | Skill | What It Covers |
 |---|---|
-| [`testing-base-classes`](./coldbox/testing-base-classes/SKILL.md) | Testing class hierarchy, annotations (appMapping, configMapping, unloadColdBox), test harness setup, when to use each base class |
+| [`testing-base-classes`](./coldbox/testing-base-classes/SKILL.md) | Testing class hierarchy, annotations (appMapping, configMapping, unloadColdBox), test harness setup, when to use each base class, including `BrowserTestCase` |
 | [`testing-handler`](./coldbox/testing-handler/SKILL.md) | Handler testing with `execute()`, rc/prc assertions, view selection, renderData, relocations, mock injection, BaseHandlerTest isolation |
 | [`testing-integration`](./coldbox/testing-integration/SKILL.md) | Full virtual-app integration tests, lifecycle management, route testing, database rollback, custom matchers |
 | [`testing-http-methods`](./coldbox/testing-http-methods/SKILL.md) | `get()`, `post()`, `put()`, `patch()`, `delete()`, `request()` simulation, headers, JSON bodies, `toHaveStatus()`, `toHaveInvalidData()` |
 | [`testing-model`](./coldbox/testing-model/SKILL.md) | BaseModelTest, the `model` variable, mockLogger/mockLogBox/mockCacheBox/mockWireBox, mocking collaborators, init() patterns |
 | [`testing-interceptor`](./coldbox/testing-interceptor/SKILL.md) | BaseInterceptorTest, the `interceptor` variable, mockController/mockRequestService/mockFlash, configProperties, announce point testing |
+| [`testing-browser`](./coldbox/testing-browser/SKILL.md) | `BrowserTestCase` browser tests (BoxLang + bx-playwright): `browse()`, `routeURL()`/`visitRoute()`/`assertRouteIs()`, `loginAs()`/`logout()` with the BrowserTesting module and its security model, app server setup, CI |
 
 ### `testbox` — Comprehensive TestBox Skills
 
 | Skill | What It Covers |
 |---|---|
-| [`bdd`](./testbox/bdd/SKILL.md) | BDD suites with describe/it, Gherkin-style given/when/then, lifecycle hooks, focused/skipped specs, nested suites, labels |
-| [`unit`](./testbox/unit/SKILL.md) | xUnit-style tests (testXxx), setup/teardown, `$assert` object, Arrange-Act-Assert pattern |
+| [`bdd`](./testbox/bdd/SKILL.md) | BDD suites with describe/it, Gherkin-style given/when/then, lifecycle hooks, focused/skipped specs, nested suites, labels, spec `retries`, `attach()` |
+| [`unit`](./testbox/unit/SKILL.md) | xUnit-style tests (testXxx), setup/teardown, `$assert` object, Arrange-Act-Assert pattern, `retries` method annotation |
 | [`assertions`](./testbox/assertions/SKILL.md) | `$assert` object, isTrue/isEqual/includes/isEmpty/throws/between/match, custom assertion functions, BoxLang dynamic assertion methods |
-| [`expectations`](./testbox/expectations/SKILL.md) | Fluent `expect()`, all matchers (toBe/toBeTrue/toHaveKey/toThrow/toMatch), `not` operator, `expectAll()` over collections, custom matchers |
+| [`expectations`](./testbox/expectations/SKILL.md) | Fluent `expect()`, all matchers (toBe/toBeTrue/toHaveKey/toThrow/toMatch), `not` operator, `expectAll()` over collections, custom matchers, browser matchers pointer |
 | [`mockbox`](./testbox/mockbox/SKILL.md) | MockBox mocks/stubs/spies, `$()` stubbing, `$args/$results/$throws`, call-count verification, `$callLog`, `querySim`, `$spy` |
 | [`cbmockdata`](./testbox/cbmockdata/SKILL.md) | Generating fake data (age, email, name, uuid, lorem, etc.), arrays of objects, nested objects, custom supplier closures |
-| [`runners`](./testbox/runners/SKILL.md) | CommandBox CLI runner, BoxLang CLI, HTML runner, programmatic TestBox, watcher mode, streaming runner, all CLI flags |
-| [`reporters`](./testbox/reporters/SKILL.md) | ANTJunit/Console/Doc/JSON/JUnit/Min/Simple/Text/XML reporters, reporter options, custom IReporter implementations |
+| [`runners`](./testbox/runners/SKILL.md) | CommandBox CLI runner, BoxLang CLI, HTML runner, programmatic TestBox, watcher mode, streaming runner, all CLI flags including `--retries`, `--failed` and `--web-server` |
+| [`reporters`](./testbox/reporters/SKILL.md) | ANTJunit/Console/Doc/JSON/JUnit/Min/Simple/Text/XML reporters, reporter options, spec attachments and attempts, custom IReporter implementations |
 | [`listeners`](./testbox/listeners/SKILL.md) | Run listeners (onBundleStart/End, onSuiteStart/End, onSpecStart/End), progress indicators, custom loggers, live dashboards |
 | [`testing-fixtures`](./testbox/testing-fixtures/SKILL.md) | Fixture factories, test data builders, shared fixture files, cbMockData integration, setup/teardown strategies |
 | [`testing-coverage`](./testbox/testing-coverage/SKILL.md) | Code coverage setup, coverage reporting, CI integration, TestBox coverage options, improving coverage of untested paths |
+| [`browser-testing`](./testbox/browser-testing/SKILL.md) | `BrowserSpec` browser tests on BoxLang with bx-playwright: `browse()`, annotations, the 9 browser matchers, automatic attachments, `attach()`, retries, `--failed`, `--web-server`, CI, debugging traces |
 
 ### `security` — Security and Authentication Skills
 
@@ -270,7 +272,7 @@ The bundled [`.mcp.json`](./.mcp.json) includes Ortus documentation MCP endpoint
 | Path | Purpose |
 |---|---|
 | [`coldbox/`](./coldbox/) | Core ColdBox framework skills, testing patterns, and database migration workflows |
-| [`testbox/`](./testbox/) | Comprehensive TestBox skills (BDD, xUnit, MockBox, runners, reporters) |
+| [`testbox/`](./testbox/) | Comprehensive TestBox skills (BDD, xUnit, MockBox, runners, reporters, browser testing) |
 | [`security/`](./security/) | Authentication, authorization, CSRF, SSO, passkeys |
 | [`wirebox/`](./wirebox/) | WireBox dependency injection |
 | [`cachebox/`](./cachebox/) | CacheBox standalone caching |

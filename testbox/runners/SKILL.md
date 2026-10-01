@@ -1,6 +1,6 @@
 ---
 name: testbox-runners
-description: "Use this skill when running TestBox tests: CommandBox CLI (testbox run), BoxLang CLI (./testbox/run), HTML web runner, programmatic TestBox instantiation (run/runRaw/runRemote), configuring test directories or bundles, using the streaming runner (--stream flag / StreamingRunner), watcher mode, all CLI flags (--show-failed-only, --dry-run, --slow-threshold-ms, --stacktrace, --max-failures), toggling code coverage with the coverageEnabled URL parameter (opt-in since TestBox 7.1), or setting up box.json testbox configuration."
+description: "Use this skill when running TestBox tests: CommandBox CLI (testbox run), BoxLang CLI (./testbox/run), HTML web runner, programmatic TestBox instantiation (run/runRaw/runRemote), configuring test directories or bundles, using the streaming runner (--stream flag / StreamingRunner), watcher mode, all CLI flags (--show-failed-only, --dry-run, --slow-threshold-ms, --stacktrace, --max-failures), toggling code coverage with the coverageEnabled URL parameter (opt-in since TestBox 7.1), retrying failing specs (--retries), rerunning only the last failures (--failed), starting a web server for browser tests (--web-server, --web-server-url, --web-server-timeout), or setting up box.json testbox configuration."
 applyTo: "**/tests/**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
@@ -168,6 +168,31 @@ install testbox
 # Combine options
 ./testbox/run --directory=tests/unit --show-failed-only --slow-threshold-ms=50 --top-slowest=5
 ```
+
+### Retries, Rerunning Failures and Web Servers (TestBox 7.2+)
+
+```bash
+# Rerun failing or erroring specs up to 2 more times (spec retries argument and bundle annotation win)
+./testbox/run --retries=2
+
+# Rerun only the bundles and specs that failed or errored in the last run
+./testbox/run --failed
+
+# Start a web server, wait for it, run the tests, stop it (browser tests)
+./testbox/run --directory=tests.specs.browser \
+	--web-server="boxlang-miniserver --port 8080" \
+	--web-server-url=http://localhost:8080 --web-server-timeout=60
+```
+
+| Flag | Default | Description |
+|---|---|---|
+| `--retries` | `0` | Extra attempts for failing or erroring specs. Precedence: `it( retries = N )` / xUnit `retries` method annotation, then the bundle `retries` annotation, then this flag. Skipped specs are never retried |
+| `--failed` | `false` | Run only what `{reportpath}/.testbox-failed.json` lists; every run writes it. Missing or empty file: prints a message and runs nothing |
+| `--web-server` | | Shell command (`sh -c`, `cmd /c` on Windows) started before the tests and stopped with its child processes after them |
+| `--web-server-url` | `http://localhost:8080` | Polled until it answers with a status below 500; stored in `server.testbox.webServerURL` and used as the default `baseURL` of `BrowserSpec` bundles |
+| `--web-server-timeout` | `60` | Seconds to wait; on timeout the runner stops the server and exits with code 1 |
+
+Programmatic equivalent of `--retries`: `new testbox.system.TestBox( directory = "tests.specs", options = { retries : 2 } )`. See the `testbox-browser-testing` skill for browser specs.
 
 ### Exit Codes
 
@@ -408,4 +433,7 @@ fi
 | Specific directory | `./testbox/run --directory=tests/unit` |
 | Specific bundles | `./testbox/run --bundles=tests.specs.MySpec` |
 | JUnit for CI | `./testbox/run --reporter=junit` |
+| Retry flaky specs | `./testbox/run --retries=2` |
+| Rerun last failures | `./testbox/run --failed` |
+| Start the app first | `./testbox/run --web-server="boxlang-miniserver --port 8080"` |
 | Watch mode | `testbox watch` |

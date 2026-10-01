@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "ColdBox skills for Claude Code — handlers, routing, REST APIs, interceptors, testing, security, ORM, WireBox DI, CacheBox, and LogBox",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "pluginRoot": "."
   },
   "plugins": [
@@ -17,7 +17,7 @@
         "repo": "ColdBox/skills"
       },
       "description": "ColdBox skills for Claude Code — handlers, routing, REST APIs, interceptors, testing, security, ORM, WireBox DI, CacheBox, and LogBox",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "author": {
         "name": "Ortus Solutions",
         "email": "info@ortussolutions.com"

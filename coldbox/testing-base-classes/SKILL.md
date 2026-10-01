@@ -1,6 +1,6 @@
 ---
 name: coldbox-testing-base-classes
-description: "Use this skill to understand which ColdBox testing base class to extend for a given test type, configure test bundle annotations (appMapping, configMapping, unloadColdBox, loadColdBox, coldboxAppKey), set up the tests/ harness (Application.cfc, folder structure), or choose between integration testing (BaseTestCase), isolated handler testing (BaseHandlerTest), model unit testing (BaseModelTest), and interceptor unit testing (BaseInterceptorTest)."
+description: "Use this skill to understand which ColdBox testing base class to extend for a given test type, configure test bundle annotations (appMapping, configMapping, unloadColdBox, loadColdBox, coldboxAppKey), set up the tests/ harness (Application.cfc, folder structure), or choose between integration testing (BaseTestCase), isolated handler testing (BaseHandlerTest), model unit testing (BaseModelTest), interceptor unit testing (BaseInterceptorTest), and real-browser testing of the running app (BrowserTestCase, BoxLang + bx-playwright)."
 applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
@@ -13,7 +13,8 @@ testbox.system.BaseSpec
  └── coldbox.system.testing.BaseTestCase
       ├── coldbox.system.testing.BaseHandlerTest
       ├── coldbox.system.testing.BaseModelTest
-      └── coldbox.system.testing.BaseInterceptorTest
+      ├── coldbox.system.testing.BaseInterceptorTest
+      └── coldbox.system.testing.BrowserTestCase   (BoxLang only, ColdBox 8.3+)
 ```
 
 ---
@@ -26,6 +27,7 @@ testbox.system.BaseSpec
 | Handler CFC in complete isolation (no app load) | `BaseHandlerTest` |
 | A model/service/ORM entity in isolation | `BaseModelTest` |
 | An interceptor CFC in isolation | `BaseInterceptorTest` |
+| User journeys in a real browser against the running app (forms, JavaScript, sessions, named routes, `loginAs()`) | `BrowserTestCase` (see `coldbox-testing-browser`) |
 | Any CFML/BX component with no ColdBox app | `BaseSpec` (TestBox) |
 
 ---
@@ -234,6 +236,27 @@ class extends="coldbox.system.testing.BaseInterceptorTest"
 | `variables.mockLogger` | Mock LogBox logger |
 | `variables.mockLogBox` | Mock LogBox |
 | `variables.mockFlash` | Mock flash scope |
+
+---
+
+## BrowserTestCase (Real Browser)
+
+`BrowserTestCase` (BoxLang only, needs bx-playwright and TestBox 7.2+) still loads the app virtually like `BaseTestCase`, and drives a real browser against your **running** server. Extra annotations: `baseURL` (the running app) and `browserProfile` (bx-playwright profiles). It adds `browse()`, the TestBox browser matchers, and the ColdBox helpers `routeURL()`, `visitRoute()`, `assertRouteIs()`, `loginAs()` and `logout()`. Without bx-playwright its browser specs are skipped, not failed. Full guide: the [`coldbox-testing-browser`](../testing-browser/SKILL.md) skill.
+
+```boxlang
+class extends="coldbox.system.testing.BrowserTestCase" appMapping="/root" baseURL="http://127.0.0.1:8080" {
+    function run() {
+        describe( "Users", () => {
+            it( "shows a user", () => {
+                browse( ( page ) => {
+                    visitRoute( page, "users.show", { id : 5 } )
+                    expect( page ).toSee( "User 5" )
+                } )
+            } )
+        } )
+    }
+}
+```
 
 ---
 
