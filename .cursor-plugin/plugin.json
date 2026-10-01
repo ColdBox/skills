@@ -2,7 +2,7 @@
   "name": "coldbox-agent-skills",
   "displayName": "ColdBox Skills",
   "description": "ColdBox skills for Cursor — handlers, routing, REST APIs, interceptors, testing, security, ORM, WireBox DI, CacheBox, LogBox, and ContentBox CMS.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": {
     "name": "Ortus Solutions",
     "url": "https://www.ortussolutions.com"

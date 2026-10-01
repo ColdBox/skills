@@ -1,6 +1,6 @@
 ---
 name: testbox-reporters
-description: "Use this skill when selecting or configuring TestBox reporters: Agent, ANTJunit, Console, Doc, JSON, JUnit, Min, MinText, Simple, Text, XML, Streaming; setting reporter options (hideSkipped, editor links for Simple reporter); or creating a custom reporter by implementing the IReporter interface."
+description: "Use this skill when selecting or configuring TestBox reporters: Agent, ANTJunit, Console, Doc, JSON, JUnit, Min, MinText, Simple, Text, XML, Streaming; setting reporter options (hideSkipped, editor links for Simple reporter); how reporters show spec attachments (attach(), browser screenshots/traces/videos) and retry attempts; or creating a custom reporter by implementing the IReporter interface."
 applyTo: "**/tests/**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
@@ -258,6 +258,21 @@ data: {"specName":"it can create a user","status":"passed","duration":12}
 
 data: {"specName":"it can delete a user","status":"failed","message":"Expected true but got false","duration":8}
 ```
+
+---
+
+## Spec Attachments and Attempts (TestBox 7.2+)
+
+Files attached to a spec, with `attach( path, type = "file", name = "" )` or automatically by browser specs (failure `screenshot`, `trace` and `video` files of `BrowserSpec` / `BrowserTestCase`), are stored in the `attachments` array of the spec stats (`{ path, type, name }`), for passed and failed specs. Each reporter surfaces them:
+
+| Reporter | Attachments |
+|---|---|
+| `json` | Included in the spec stats (`attachments`), along with the `attempts` count |
+| `simple` | Linked under the spec |
+| `junit`, `antjunit` | A `<system-out>` per spec with one `[[ATTACHMENT|/abs/path]]` line per file (understood by Jenkins and JUnit report actions) |
+| `text`, `console`, streaming output | Listed under failed specs |
+
+Specs that passed after a retry show "(passed after N attempts)" in the text, console, Simple and stream outputs. See the `testbox-browser-testing` skill for `attach()` and retries.
 
 ---
 

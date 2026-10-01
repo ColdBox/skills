@@ -1,6 +1,6 @@
 ---
 name: testbox-expectations
-description: "Use this skill when writing fluent expectations in TestBox using expect(), the collection modes (expectAll, expectAny, expectSome, expectNone), expectation context with withContext(), and the built-in matchers: toBe, toBeTrue, toBeFalse, toBeTruthy, toBeFalsy, toBeNull, toBeArray, toBeStruct, toBeEmpty, toHaveLength, toHaveSize, toBeTypeOf, toBeInstanceOf, toBeSameInstanceAs, toHaveKey, toHaveDeepKey, toInclude, toIncludeWithCase, toIncludeAll, toIncludeAny, toIncludeNone, toMatch, toBeGT, toBeGTE, toBeLT, toBeLTE, toBeBetween, toBeCloseTo, toSatisfy, toThrow, toThrowMatching; the BoxLang-only Set matchers (toBeASet, toEqualSet, toBeSubsetOf, toBeSupersetOf, toBeDisjointFrom, toHaveUnion, toHaveIntersection, toHaveDifference, toHaveSymmetricDifference); the BoxLang-only Range matchers (toBeRange, toContainValue, toContainRange, toBeInRange, toBeBeforeRange, toBeAfterRange, toBeBounded, toBeUnbounded, toBeHalfBounded, toBeIterable, toBeAscending, toBeDescending, toHaveStep, toClampTo); the BoxLang-only Data Navigator matchers (toHavePath, toHavePathValue, toHavePathType, toHavePathSatisfying, path, queryPath); the not operator (notToBe, notToBeEmpty, etc.); chaining matchers on one expect(); or creating custom matchers with addMatchers()."
+description: "Use this skill when writing fluent expectations in TestBox using expect(), the collection modes (expectAll, expectAny, expectSome, expectNone), expectation context with withContext(), and the built-in matchers: toBe, toBeTrue, toBeFalse, toBeTruthy, toBeFalsy, toBeNull, toBeArray, toBeStruct, toBeEmpty, toHaveLength, toHaveSize, toBeTypeOf, toBeInstanceOf, toBeSameInstanceAs, toHaveKey, toHaveDeepKey, toInclude, toIncludeWithCase, toIncludeAll, toIncludeAny, toIncludeNone, toMatch, toBeGT, toBeGTE, toBeLT, toBeLTE, toBeBetween, toBeCloseTo, toSatisfy, toThrow, toThrowMatching; the BoxLang-only Set matchers (toBeASet, toEqualSet, toBeSubsetOf, toBeSupersetOf, toBeDisjointFrom, toHaveUnion, toHaveIntersection, toHaveDifference, toHaveSymmetricDifference); the BoxLang-only Range matchers (toBeRange, toContainValue, toContainRange, toBeInRange, toBeBeforeRange, toBeAfterRange, toBeBounded, toBeUnbounded, toBeHalfBounded, toBeIterable, toBeAscending, toBeDescending, toHaveStep, toClampTo); the BoxLang-only Data Navigator matchers (toHavePath, toHavePathValue, toHavePathType, toHavePathSatisfying, path, queryPath); the BoxLang-only browser matchers for bx-playwright pages and locators (toHaveTitle, toHaveURL, toSee, toHaveText, toBeVisible, toBeHidden, toHaveCount, toHaveValue; see testbox-browser-testing); the not operator (notToBe, notToBeEmpty, etc.); chaining matchers on one expect(); or creating custom matchers with addMatchers()."
 applyTo: "**/tests/**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
@@ -15,6 +15,7 @@ applyTo: "**/tests/**/*.{bx,bxm,cfc,cfm,cfml}"
 - Using the `not` operator to negate any matcher (`notToBe`, `notToBeEmpty`, etc.)
 - Asserting against BoxLang `Set`, `Range` and nested data structures (BoxLang-only matchers)
 - Building and registering custom matchers with `addMatchers()`
+- Asserting on browser pages and locators (`expect( page ).toSee( "Welcome" )`): see the `testbox-browser-testing` skill
 
 ---
 
@@ -720,6 +721,9 @@ boolean function toMeetCriteria( required expectation, args = {} ) {
 | Set | `toBeASet`, `toEqualSet`, `toBeSubsetOf`, `toBeSupersetOf`, `toBeDisjointFrom`, `toHaveUnion`, `toHaveIntersection`, `toHaveDifference`, `toHaveSymmetricDifference` |
 | Range | `toBeRange`, `toContainValue`, `toContainRange`, `toBeInRange`, `toBeBeforeRange`, `toBeAfterRange`, `toBeBounded`, `toBeUnbounded`, `toBeHalfBounded`, `toBeIterable`, `toBeAscending`, `toBeDescending`, `toHaveStep`, `toClampTo` |
 | Data Navigator | `toHavePath`, `toHavePathValue`, `toHavePathType`, `toHavePathSatisfying`, `path`, `queryPath` |
+| Browser (7.2+, bx-playwright) | `toHaveTitle`, `toHaveURL`, `toHavePath`, `toSee` (pages); `toSee`, `toHaveText`, `toBeVisible`, `toBeHidden`, `toHaveCount`, `toHaveValue` (locators) |
+
+The browser matchers live in `testbox.system.browser.BrowserMatchers`. They are registered automatically in `testbox.system.BrowserSpec` and ColdBox `BrowserTestCase` bundles, or with `addMatchers( new testbox.system.browser.BrowserMatchers() )` in any BoxLang spec. They retry until the bx-playwright assertion timeout, their `not` forms wait too, and `toHavePath()` falls back to the Data Navigator matcher when the actual value is not a page. Full reference: the `testbox-browser-testing` skill.
 
 ### Expectation Starters
 

@@ -1,6 +1,6 @@
 ---
 name: testbox-bdd
-description: "Use this skill when writing BDD-style tests with TestBox using describe/it blocks, feature/story/scenario/given/when/then Gherkin-style suites, lifecycle hooks (beforeAll/afterAll/beforeEach/afterEach/aroundEach), focused specs (fit/fdescribe), skipping specs (xit/xdescribe/skip()) or whole test classes with the class-level skip annotation, engine detection helpers (isBoxLang/isLucee/isAdobe), grouped assertions with assertAll(), collection expectations (expectAll/expectAny/expectSome/expectNone), spec data binding, asyncAll parallel specs, nested suite trees, labels, or organizing tests around behavior descriptions."
+description: "Use this skill when writing BDD-style tests with TestBox using describe/it blocks, feature/story/scenario/given/when/then Gherkin-style suites, lifecycle hooks (beforeAll/afterAll/beforeEach/afterEach/aroundEach), focused specs (fit/fdescribe), skipping specs (xit/xdescribe/skip()) or whole test classes with the class-level skip annotation, engine detection helpers (isBoxLang/isLucee/isAdobe), grouped assertions with assertAll(), collection expectations (expectAll/expectAny/expectSome/expectNone), spec data binding, retrying flaky specs (it/fit/xit retries argument, retries bundle annotation), attaching files to a spec with attach(), asyncAll parallel specs, nested suite trees, labels, or organizing tests around behavior descriptions."
 applyTo: "**/tests/**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
@@ -452,12 +452,36 @@ behaviour with several facets, not a way to cram a suite into a single spec. See
 
 ---
 
+## Retrying Flaky Specs and Attaching Files
+
+*TestBox 7.2+.* `it()`, `fit()` and `xit()` take a `retries` argument: how many **extra** times a failing or erroring spec runs. Each attempt reruns every `beforeEach()`, `aroundEach()`, the body and `afterEach()`; only the final attempt is recorded and the output shows "(passed after N attempts)". Skipped specs are never retried.
+
+```boxlang
+class extends="testbox.system.BaseSpec" retries="1" {   // bundle default
+
+    function run() {
+        describe( "Payments gateway", () => {
+            it( title = "charges a card", retries = 2, body = () => {   // spec value wins
+                var receipt = gateway.charge( 100 )
+                attach( receipt.pdfPath, "file", "receipt.pdf" )         // attach( path, type, name )
+                expect( receipt.status ).toBe( "paid" )
+            } )
+        } )
+    }
+
+}
+```
+
+Precedence: spec `retries` > bundle `retries` annotation > runner `--retries=N` (or `options = { retries : N }`). `attach()` works from a spec body or `beforeEach()` / `afterEach()` / `aroundEach()` closures (otherwise `TestBox.InvalidContext`). Use retries for flaky I/O, not to hide bugs. For browser specs see the [`testbox-browser-testing`](../browser-testing/SKILL.md) skill.
+
+---
+
 ## Key Functions Quick Reference
 
 | Function | Alias(es) | Description |
 |---|---|---|
 | `describe( title, body, [labels], [asyncAll], [skip] )` | `story`, `feature`, `scenario`, `given`, `when` | Define a test suite |
-| `it( title, body, [labels], [skip], [data] )` | `then` | Define a spec / test case |
+| `it( title, body, [labels], [skip], [data] )` | `then` | Define a spec / test case; pass `retries = N` by name to retry it (7.2+) |
 | `beforeAll( body )` | — | Run once before all specs in the bundle |
 | `afterAll( body )` | — | Run once after all specs in the bundle |
 | `beforeEach( body, [data] )` | — | Run before each spec in the suite |
@@ -470,6 +494,7 @@ behaviour with several facets, not a way to cram a suite into a single spec. See
 | `expectNone( collection )` | — | Assert zero elements pass (7.1+) |
 | `assertAll( executables, [heading] )` | `$assert.all()` | Run every assertion closure, report all failures at once (7.1+) |
 | `skip( [message], [detail] )` | — | Skip the current spec or suite inline |
+| `attach( path, [type], [name] )` | | Attach a file to the running spec (7.2+) |
 | `addMatchers( matchers )` | — | Register custom matchers |
 | `getInstance( name )` | — | Shortcut for WireBox `getInstance()` |
 | `debug( var, [label] )` | — | Output a variable to the debug panel |

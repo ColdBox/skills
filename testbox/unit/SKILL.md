@@ -1,6 +1,6 @@
 ---
 name: testbox-unit-xunit
-description: "Use this skill when writing xUnit-style tests in TestBox using test functions (testXxx()), setup/teardown lifecycle (beforeTests/afterTests/setup/teardown), the $assert assertion object, grouped assertions with $assert.all() / assertAll(), skipping a single test or an entire test class with the class-level skip annotation, engine detection helpers (isBoxLang/isLucee/isAdobe), or the Arrange-Act-Assert (AAA) pattern for unit testing services, models, and utilities in isolation."
+description: "Use this skill when writing xUnit-style tests in TestBox using test functions (testXxx()), setup/teardown lifecycle (beforeTests/afterTests/setup/teardown), the $assert assertion object, grouped assertions with $assert.all() / assertAll(), retrying flaky tests with the retries method or bundle annotation, attaching files with attach(), skipping a single test or an entire test class with the class-level skip annotation, engine detection helpers (isBoxLang/isLucee/isAdobe), or the Arrange-Act-Assert (AAA) pattern for unit testing services, models, and utilities in isolation."
 applyTo: "**/tests/**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
@@ -338,6 +338,26 @@ function testUserShape() {
 
 `assertAll( executables, [heading] )` is the same call under a shorter name. See the
 [`testbox-assertions`](../assertions/SKILL.md) skill for the full contract.
+
+---
+
+## Retrying Flaky Tests and Attaching Files
+
+*TestBox 7.2+.* A `retries` annotation on a test method (or on the bundle class) reruns a failing or erroring test up to N **extra** times. Each attempt reruns `setup()`, the test and `teardown()`; only the final attempt is recorded. Skipped tests are never retried.
+
+```boxlang
+class extends="testbox.system.BaseSpec" retries="1" {   // bundle default
+
+    function testChargesACard() retries="3" {           // method annotation wins
+        var receipt = variables.gateway.charge( 100 )
+        attach( receipt.pdfPath, "file", "receipt.pdf" ) // attach( path, type, name )
+        $assert.isEqual( "paid", receipt.status )
+    }
+
+}
+```
+
+Precedence: method `retries` > bundle `retries` annotation > runner `--retries=N`. `bx-playwright` assertion failures (`Playwright.AssertionFailed`) count as test **failures**, not errors. For browser tests see the [`testbox-browser-testing`](../browser-testing/SKILL.md) skill.
 
 ---
 
