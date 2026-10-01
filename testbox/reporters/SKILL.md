@@ -1,6 +1,6 @@
 ---
 name: testbox-reporters
-description: "Use this skill when selecting or configuring TestBox reporters: ANTJunit, Console, Doc, JSON, JUnit, Min, MinText, Simple, Text, XML, Streaming; setting reporter options (hideSkipped, editor links for Simple reporter); or creating a custom reporter by implementing the IReporter interface."
+description: "Use this skill when selecting or configuring TestBox reporters: Agent, ANTJunit, Console, Doc, JSON, JUnit, Min, MinText, Simple, Text, XML, Streaming; setting reporter options (hideSkipped, editor links for Simple reporter); or creating a custom reporter by implementing the IReporter interface."
 applyTo: "**/tests/**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
@@ -10,6 +10,7 @@ applyTo: "**/tests/**/*.{bx,bxm,cfc,cfm,cfml}"
 
 - Choosing the right reporter for a use case (CI, development, IDE, browser)
 - Configuring reporter-specific options (hideSkipped, IDE links)
+- Using the AgentReporter for token-efficient output for AI agents and automation
 - Using the StreamingReporter for real-time SSE output
 - Building a custom reporter by implementing `IReporter`
 
@@ -19,6 +20,7 @@ applyTo: "**/tests/**/*.{bx,bxm,cfc,cfm,cfml}"
 
 | Reporter Key | Class | Best For |
 |---|---|---|
+| `agent` | `testbox.system.reports.AgentReporter` | AI agents, minimal token usage (TB7.2+) |
 | `antjunit` | `testbox.system.reports.ANTJunitReporter` | Ant/legacy CI pipelines |
 | `console` | `testbox.system.reports.ConsoleReporter` | CI stdout logs |
 | `doc` | `testbox.system.reports.DocReporter` | Living documentation |
@@ -151,6 +153,43 @@ Typical JSON shape:
   "bundleStats": [...]
 }
 ```
+
+---
+
+### `agent` — Agent (token-efficient JSON)
+
+Compact, single-line JSON built for AI agents: totals plus only the failed/errored specs. A passing run is a few dozen tokens. Prefer it over `json` when the consumer is an LLM.
+
+```bash
+./testbox/run --reporter=agent
+```
+
+```boxlang
+var report = new testbox.system.TestBox(
+    bundles  : "tests.specs.MyTest",
+    reporter : { type: "testbox.system.reports.AgentReporter", options: { maxFailures: 10, includeStack: true } }
+).run()
+```
+
+Output shape:
+
+```json
+{"ok":false,"totals":{"pass":120,"fail":2,"error":1,"skipped":3,"specs":126,"ms":4210},
+ "failures":[{"bundle":"tests.specs.FooTest","spec":"Foo > can add","status":"failed","message":"Expected [4] but received [3]","at":"tests/specs/FooTest.cfc:42"}],
+ "truncated":0}
+```
+
+| Option | Default | Purpose |
+|---|---|---|
+| `detail` | `failures` | `summary` (totals only), `failures`, or `all` (adds a compact `specs` list) |
+| `maxFailures` | `20` | Cap on listed failures, `0` = unlimited. Overflow is counted in `truncated` |
+| `maxMessageLength` | `300` | Truncates each failure message, `0` = unlimited |
+| `includeStack` | `false` | Adds a `stack` array of `file:line` frames to each failure |
+| `stackDepth` | `3` | Frames kept when `includeStack` is true |
+| `includeSkipped` | `false` | Adds a `skipped` array of spec paths |
+| `includeDebug` | `false` | Adds a `debug` array of debug buffer output |
+
+Notes: `at` paths are relative to the web/working root. Bundle-level exceptions (for example a failing `beforeAll()`) appear in `failures` with an empty `spec`. The reporter does not change the process exit code, read `ok`.
 
 ---
 
@@ -339,6 +378,7 @@ new testbox.system.TestBox(
 | CI (GitHub Actions / Jenkins) | `junit` or `antjunit` |
 | Log file output | `text` or `mintext` |
 | Test dashboard / API | `json` |
+| AI agents / minimal tokens | `agent` |
 | Real-time streaming | `streaming` (or `--stream` flag) |
 | Living documentation | `doc` |
 | Custom pipeline | Custom class via `IReporter` |
