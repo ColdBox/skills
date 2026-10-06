@@ -3,7 +3,9 @@ name: rulebox
 description: >
   Use this skill when writing business rules with RuleBox, the natural-language rules engine for
   BoxLang and ColdBox. Covers RuleBook classes and defineRules(), the given/when/except/then/using/
-  withPriority/stop/active DSL, facts and the Result object, the Builder, declared rulebooks
+  withPriority/stop/active/withDescription DSL, facts and the Result object, declaring and enforcing
+  the facts a RuleBook takes (defineFacts, fact(), withFacts, enforceFacts, strictFacts,
+  validateFacts), describing rulebooks and rules, the Builder, declared rulebooks
   (ruleBook( "name" ), inject="rulebook:name"), loading rules from JSON, YAML or a database with the
   condition grammar and registered actions/predicates, the audit trail, dryRun(), rule metrics,
   error handling, thread safety, the Rule Visualizer, and testing rulebooks with TestBox.
@@ -23,6 +25,7 @@ Load this skill when:
 
 - Replacing long `if`/`elseif` chains (eligibility, pricing, rates, discounts, routing, fraud flags) with named, testable rules
 - Writing a class that extends `rulebox.models.RuleBook`, or calling `newRule()`, `addRule()`, `given()`, `run()` or `getResult()`
+- Declaring which facts a RuleBook takes (types, required, defaults), enforcing them, or describing rulebooks and rules
 - Loading rules from JSON, YAML or a database table with `loadRules()`, or declaring rulebooks under `moduleSettings.rulebox`
 - Asking which rules fired, previewing rules with `dryRun()`, or reading rule metrics
 - Enabling or securing the Rule Visualizer at `/rulebox-visualizer`
@@ -87,6 +90,7 @@ var greeting = getInstance( "HelloWorld" )
 - `newRule( name )` takes an optional name. Rule names must be unique within a RuleBook: a duplicate throws `RuleBox.DuplicateRuleNameException`. Name every rule, because the audit trail and metrics are keyed by name.
 - `addRule()` also accepts a closure that configures the rule: `addRule( ( rule ) => rule.setName( "x" ).then( ... ) )`.
 - A RuleBook has a name too (`setName( name )`), used by auditing and the Visualizer.
+- Next release (not in 2.0.0): the class docblock becomes the rulebook's description, and a RuleBook can declare the facts it takes in `defineFacts()`. See [Declaring Facts](#declaring-facts-next-release) and [Descriptions](#descriptions-next-release).
 
 ## The DSL
 
@@ -102,6 +106,7 @@ Given-When-Then, plus `except()`:
 | `withPriority( n )` | Higher runs earlier. Default `0`; ties keep insertion order. Can be set before or after `addRule()` |
 | `stop()` | After this rule fires, no further rules run |
 | `active( from, until )` | Only evaluate the rule inside a date window; either bound can be omitted. Outside it the rule is `SKIPPED` |
+| `withDescription( text )` | Next release. Says what the rule does, for the Visualizer and `dryRun()`. No effect on how it runs |
 
 ```js
 class extends="rulebox.models.RuleBook"{
@@ -215,6 +220,71 @@ class{
 }
 ```
 
+## Declaring Facts (next release)
+
+> Unreleased: on RuleBox's `development` branch, coming in the release after 2.0.0. Check the
+> installed version before using it.
+
+A RuleBook can declare the facts it takes. The declarations document the rulebook and drive the
+Visualizer's dry run form; they are only checked when the rulebook **enforces** them.
+
+```js
+class extends="rulebox.models.RuleBook"{
+
+	function defineFacts(){
+		enforceFacts()   // optional: check facts on every run(); strictFacts() also rejects undeclared ones
+		fact( "creditScore" ).type( "numeric" ).required().description( "300 to 850" ).example( 680 )
+		fact( "cashOnHand" ).type( "numeric" ).defaultValue( 0 )
+		fact( "loanType" ).type( "string" ).values( [ "fixed", "variable" ] ).defaultValue( "fixed" )
+	}
+
+	function defineRules(){ /* ... */ }
+
+}
+```
+
+- `fact( name )` builder: `type()`, `required( value = true )`, `defaultValue( value )` (not `default()`: reserved word), `description()`, `example()`, `values( array )` (simple values compare without regard to case). Calling `fact()` again with the same name returns the existing declaration, so an instance can refine a class's facts.
+- Types: `any` (default), `string` (any simple value), `numeric`, `integer`, `boolean`, `date`, `struct`, `array`, `object`. An unknown type or blank name throws `RuleBox.InvalidFactDefinitionException`.
+- `withFacts( { creditScore : { type : "numeric", required : true, default : 0, description : "", example : 680, values : [] } } )` declares from data, for Builder rulebooks, rule files and config. It validates every declaration first and declares nothing if one is invalid.
+- `defineFacts()` runs once per instance, the first time facts are needed.
+- `enforceFacts( strict = false )` / `strictFacts()`. Called in `defineFacts()` they apply to every instance; called on an instance they win over the class. When enforcing, `run()` and `dryRun()`:
+  1. fill missing (or `null`) facts that have a default (`run()` keeps them in the rulebook's facts; `dryRun()` checks a copy);
+  2. check required, type and `values`, plus undeclared facts when strict;
+  3. throw `RuleBox.InvalidFactsException` before any rule runs.
+- The exception's `message` lists every problem; `extendedInfo` holds them as a JSON array of `{ fact, problem, message }`, where `problem` is `missing`, `type`, `value` or `undeclared`. Messages never include fact values.
+- `validateFacts( facts )` returns the same problems without running or throwing, whether or not the rulebook enforces (use it to validate a form or API request first).
+- `getFactDefinitions()` returns `[ { name, type, required, description, default?, example?, values? } ]` in declaration order. `getFactsEnforced()` / `getFactsStrict()` report the mode.
+
+```js
+try{
+	ruleBook.run( facts )
+} catch( "RuleBox.InvalidFactsException" e ){
+	var problems = jsonDeserialize( e.extendedInfo )   // [ { fact, problem, message } ]
+}
+```
+
+## Descriptions (next release)
+
+Rulebooks and rules can say what they do. Descriptions are shown in the Visualizer and have no
+effect on how anything runs.
+
+```js
+/**
+ * Decides a loan application from the applicant's credit score.
+ */
+class extends="rulebox.models.RuleBook"{
+
+	function defineRules(){
+		addRule( newRule( "autoApprove" ).withDescription( "Approves a score of 680 or more" ).when( ... ) )
+	}
+
+}
+```
+
+- `RuleBook.getDescription()` returns the first of: a description set with `withDescription( text )`, a rule file's or config's `description`; the class's `@description( "..." )` or `@hint( "..." )` annotation; the class docblock (line breaks folded into spaces). A plain `RuleBook` (Builder or registry) never picks up RuleBook's own docblock, so it is `""` until set.
+- `Rule.withDescription( text )` / `getDescription()`; a rule definition takes a `description` key.
+- `dryRun()` reports each rule's `description`.
+
 ## The Builder
 
 `Builder@rulebox` (a thread-safe singleton) builds rules and rulebooks at runtime, with no class.
@@ -280,6 +350,7 @@ table from an untrusted source is safe to load.
 | Key | Meaning |
 |---|---|
 | `name` | The rule's name (for auditing) |
+| `description` | Next release. What the rule does, like `withDescription()` |
 | `priority` | Same as `withPriority()`; default `0` |
 | `activeFrom` / `activeUntil` | Same as `active()`; either can be omitted |
 | `when` / `except` | A condition node, or a `{ "predicate": "name", "params": {} }` reference |
@@ -373,6 +444,23 @@ row throws `RuleBox.InvalidRuleRowException` naming the rule and column.
 Any object with a `load()` method that returns an array of definitions is a valid source (a REST
 call, a cache, a config service). There is no interface to implement.
 
+Next release: a source (JSON, YAML or inline) may return an **envelope** instead of a bare array, to
+describe the rulebook and declare its facts. `rules` is required; the rest is optional. Any other
+key throws `RuleBox.InvalidRuleDefinitionException`, and the envelope is applied only after every
+rule builds.
+
+```json
+{
+	"description": "Approves applicants with a credit score of 600 or more",
+	"facts": {
+		"creditScore": { "type": "numeric", "required": true, "description": "FICO score", "example": 680 }
+	},
+	"enforceFacts": true,
+	"strictFacts": false,
+	"rules": [ { "name": "approve", "when": { "gte": [ "creditScore", 600 ] } } ]
+}
+```
+
 RuleBox never watches files or tables. Call `ruleBook.reloadRules( source )` when you decide to pick
 up edits. It is `clearRules()` (rules and audit trail) followed by `loadRules( source )`; registered
 actions, predicates and metrics are kept.
@@ -402,6 +490,13 @@ moduleSettings = {
 			// A database source needs the struct form
 			"fraud" : {
 				"source" : { "type" : "db", "datasource" : "myApp", "sql" : "SELECT * FROM rules WHERE ruleset = 'fraud'" }
+			},
+			// Next release: describe the rulebook and declare (and enforce) its facts in config
+			"loans" : {
+				"source"       : "config/rules/loans.json",
+				"description"  : "Decides home loan applications",
+				"facts"        : { "creditScore" : { "type" : "numeric", "required" : true } },
+				"enforceFacts" : true
 			}
 		}
 	}
@@ -411,6 +506,7 @@ moduleSettings = {
 - Any `*.json`, `*.yaml` or `*.yml` file in the convention folder (default `config/rulebox`, change it with `conventionPath`) is discovered automatically; the rulebook's name is the file name. Two files with the same name throw `RuleBox.DuplicateRuleBookException`.
 - An explicit config entry with the same name as a discovered file layers its `actions`/`predicates` on top.
 - Config can only reference WireBox IDs. To use a closure, get the rulebook and call `registerAction()` yourself.
+- Next release: `description`, `facts`, `enforceFacts` and `strictFacts` work as in an envelope. A config `description` wins over the file's; config `facts` layer over the file's key by key; the flags only turn checking on.
 
 Getting a declared rulebook (each call builds a **fresh** RuleBook):
 
@@ -435,6 +531,9 @@ result, the facts, the audit trail or metrics. It stops where a real run would s
 var report = getInstance( "HomeLoanRateRuleBook" ).dryRun( { applicant : applicant } )
 // [ { name : "lowCredit", wouldExecute : false, wouldStop : false }, { name : "fairCredit", wouldExecute : true, wouldStop : false }, ... ]
 ```
+
+Next release: each entry also has `description` (the rule's description, or `""`), and a rulebook
+that enforces its facts checks them first (throwing `RuleBox.InvalidFactsException`).
 
 A single `Rule` can be dry-run without a RuleBook:
 `builder.rule( "lowScore" ).when( ( facts ) => facts.creditScore < 600 ).stop().dryRun( { creditScore : 550 } )`.
@@ -500,6 +599,8 @@ try{
 | `RuleBox.UnregisteredActionException` / `RuleBox.UnregisteredPredicateException` | A definition references an action/predicate that was never registered |
 | `RuleBox.InvalidRuleRowException` | A `DBRuleSource` row has a bad column value |
 | `RuleBox.DuplicateRuleBookException` | Two convention files map to the same rulebook name |
+| `RuleBox.InvalidFactsException` | Next release. A rulebook that enforces its facts gets a missing, mistyped, disallowed or (strict) undeclared fact |
+| `RuleBox.InvalidFactDefinitionException` | Next release. A fact declaration has an unknown type, key or a blank name |
 
 ## The Rule Visualizer
 
@@ -520,7 +621,8 @@ moduleSettings = {
 }
 ```
 
-- It lives at `/rulebox-visualizer/visualizer/index` (also `chain?name=`, `dryrun`, `metrics`, `live`).
+- It lives at `/rulebox-visualizer` (also `/rulebox-visualizer/chain?name=`, `/dryrun`, `/metrics`, `/live`).
+- Next release: the dashboard, chain view and dry run show rulebook and rule descriptions; the chain view lists a rulebook's declared facts (with a described/enforced/strict badge); the dry run screen builds a form from them (Form/JSON toggle) and shows each problem next to its field when the rulebook enforces its facts. `GET /rulebox-visualizer/apiFacts?name=` returns `{ name, description, enforced, strict, facts }`.
 - While `enabled` is `false` (the default), every route returns 404 and RuleBox records no metrics and broadcasts nothing.
 - **RuleBox does not secure it.** It shows rule names, error messages and stack traces (file paths included), so protect `/rulebox-visualizer` with a cbsecurity rule or your own auth before enabling it outside development.
 - `InMemoryMetricsStore` (the default) needs no setup but resets on restart. `SQLiteMetricsStore` persists to a `rulebox_events` table and needs `bx-sqlite` plus a datasource named by `datasourceName`. Its optional `retentionDays` (30), `maxStoredEvents` (100000), `circuitBreakerThreshold` (5) and `circuitBreakerCooldownSeconds` (60) settings bound its growth and failures.
@@ -577,10 +679,12 @@ class extends="coldbox.system.testing.BaseTestCase" appMapping="/root"{
 - Test JSON/YAML rules by loading them into a Builder rulebook with the same registered actions as production, or test a declared rulebook through `getInstance( "RuleBookRegistry@rulebox" ).getRuleBook( "name" )`.
 - `DBRuleSource( query = queryNew( ... ) )` tests database-driven rules without a database.
 - Use `dryRun()` to assert which rules would fire without running their side effects.
+- Next release: assert fact handling with `validateFacts( facts )` (an array of `{ fact, problem, message }`) and `expect( () => ruleBook.run( badFacts ) ).toThrow( "RuleBox.InvalidFactsException" )`.
 
 ## Best Practices
 
 - **Name every rule.** The audit trail, metrics, errors and Visualizer are keyed by name.
+- **Describe rulebooks and rules, and declare the facts a rulebook takes** (next release). It documents them for the next developer and drives the Visualizer's dry run form. Enforce facts at system boundaries (API input, forms) and use `validateFacts()` to report problems without running.
 - **One concern per rule.** One condition and one outcome; compose with priority and `stop()` instead of large closures.
 - **Get a fresh RuleBook per use.** Never cache one in a singleton or shared scope; use `getInstance()`, `ruleBook( "name" )` or an `inject="rulebook:name"` provider.
 - **Accumulate through the `Result`**, seeded with `withDefaultResult()`, instead of mutating facts.
