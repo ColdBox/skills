@@ -1,216 +1,597 @@
 ---
 name: rulebox
 description: >
-  Use this skill when implementing a business rules engine in ColdBox/BoxLang using rulebox. Covers
-  RuleEngine injection, defining rules with when/then/otherwise closures, named rule sets,
-  chaining rules, running a rule set against a context, and production patterns for policy
-  evaluation and workflow branching.
-applyTo: "**/*.{bx,cfc,cfm,bxm}"
+  Use this skill when writing business rules with RuleBox, the natural-language rules engine for
+  BoxLang and ColdBox. Covers RuleBook classes and defineRules(), the given/when/except/then/using/
+  withPriority/stop/active DSL, facts and the Result object, the Builder, declared rulebooks
+  (ruleBook( "name" ), inject="rulebook:name"), loading rules from JSON, YAML or a database with the
+  condition grammar and registered actions/predicates, the audit trail, dryRun(), rule metrics,
+  error handling, thread safety, the Rule Visualizer, and testing rulebooks with TestBox.
+applyTo: "**/*.{bx,bxm,bxs,cfc,cfm,json,yaml,yml}"
 ---
 
-# Rulebox Skill
+# RuleBox Skill
+
+RuleBox turns tangled `if`/`else` blocks into named rules you can read, test and audit. Given some
+facts, when a condition holds, then act. Rules are written in BoxLang with a Given-When-Then DSL, or
+as JSON, YAML or database rows that a team can change without a deploy. It is a BoxLang port of the
+Java [RuleBook](https://github.com/rulebook-rules/rulebook) project.
 
 ## When to Use This Skill
 
 Load this skill when:
-- Encapsulating business rules outside of handler/service logic
-- Evaluating complex conditional logic (eligibility, pricing, access policies) against a context
-- Composing reusable if/then rule chains that can be tested independently
-- Replacing large `if/elseif` chains with named, testable rule objects
 
-## Installation
+- Replacing long `if`/`elseif` chains (eligibility, pricing, rates, discounts, routing, fraud flags) with named, testable rules
+- Writing a class that extends `rulebox.models.RuleBook`, or calling `newRule()`, `addRule()`, `given()`, `run()` or `getResult()`
+- Loading rules from JSON, YAML or a database table with `loadRules()`, or declaring rulebooks under `moduleSettings.rulebox`
+- Asking which rules fired, previewing rules with `dryRun()`, or reading rule metrics
+- Enabling or securing the Rule Visualizer at `/rulebox-visualizer`
+- Testing rulebooks with TestBox
+
+## Requirements and Installation
+
+- BoxLang 1.14+ and ColdBox 8+ (the Visualizer's Live Tracker needs BoxLang 1.18.0+)
 
 ```bash
 box install rulebox
 ```
 
-## Core API
+Optional BoxLang modules, only if you use the feature (RuleBox does not install them for you):
 
-### Injection
+| Feature | Install |
+|---|---|
+| YAML rule files (`YAMLRuleSource`, `.yaml`/`.yml` files in the convention folder) | `box install bx-yaml` |
+| Visualizer metrics that survive a restart (`SQLiteMetricsStore`) | `box install bx-sqlite`, plus a datasource |
 
-```js
-property name="ruleEngine" inject="RuleEngine@rulebox";
-```
+### What gets registered in WireBox
 
-### Define a Rule
+| WireBox ID | Scope | Description |
+|---|---|---|
+| `RuleBook@rulebox` | Transient | A rule book that groups and chains rules |
+| `Rule@rulebox` | Transient | A single rule |
+| `Result@rulebox` | Transient | The result produced by a rule chain |
+| `Builder@rulebox` | Singleton | Builds rules and rule books on the fly |
+| `RuleBookRegistry@rulebox` | Singleton | Hands out rulebooks declared in settings or config files |
 
-```js
-var rule = ruleEngine
-    .newRule()
-    .when( function( context ) {
-        return context.age >= 18 && context.hasValidId
-    } )
-    .then( function( context ) {
-        context.approved = true
-        context.tier     = "standard"
-    } )
-    .otherwise( function( context ) {
-        context.approved = false
-        context.reason   = "Age restriction or missing ID"
-    } )
-```
+The module also adds a `ruleBook( name )` helper to handlers, views and layouts, and a
+`rulebook` injection DSL (`inject="rulebook:name"`).
 
-### Run a Rule
+## Your First RuleBook
+
+A RuleBook is a class that extends `rulebox.models.RuleBook` and adds rules in `defineRules()`.
 
 ```js
-var context = {
-    age        : rc.age,
-    hasValidId : rc.hasValidId,
-    approved   : false
-}
+// models/HelloWorld.bx
+class extends="rulebox.models.RuleBook"{
 
-rule.run( context )
+	function defineRules(){
+		addRule(
+			newRule( "sayHello" )
+				.then( ( facts, result ) => result.setValue( "Hello " & facts.name ) )
+		)
+	}
 
-if ( context.approved ) {
-    // proceed
 }
 ```
 
-### Rule Sets (Named Collections)
-
 ```js
-// Define a named rule set
-ruleEngine.define( "eligibility", [
-
-    ruleEngine.newRule()
-        .when( function( c ) { return c.accountAge < 30 } )
-        .then( function( c ) { c.flags.append( "new_account" ) } ),
-
-    ruleEngine.newRule()
-        .when( function( c ) { return c.balance < 0 } )
-        .then( function( c ) {
-            c.flags.append( "negative_balance" )
-            c.eligible = false
-        } ),
-
-    ruleEngine.newRule()
-        .when( function( c ) { return c.kycPassed && !c.flags.find( "negative_balance" ) } )
-        .then( function( c ) { c.eligible = true } )
-
-] )
-
-// Run the rule set
-var context = {
-    accountAge : 15,
-    balance    : 500,
-    kycPassed  : true,
-    eligible   : false,
-    flags      : []
-}
-
-ruleEngine.run( "eligibility", context )
-// context.eligible is now true or false
+var greeting = getInstance( "HelloWorld" )
+	.run( { name : "World" } )
+	.getResult()
+	.getValue()
+// "Hello World"
 ```
 
-## Production Patterns
+- `run( facts )` returns the RuleBook itself (for chaining), not the answer. Read the answer with `.getResult().getValue()`.
+- `defineRules()` runs on the first `run()` or `dryRun()`, not at creation, so WireBox injections are available inside it. Later runs on the same instance reuse the rules.
+- `newRule( name )` takes an optional name. Rule names must be unique within a RuleBook: a duplicate throws `RuleBox.DuplicateRuleNameException`. Name every rule, because the audit trail and metrics are keyed by name.
+- `addRule()` also accepts a closure that configures the rule: `addRule( ( rule ) => rule.setName( "x" ).then( ... ) )`.
+- A RuleBook has a name too (`setName( name )`), used by auditing and the Visualizer.
 
-### Loan Application Eligibility
+## The DSL
+
+Given-When-Then, plus `except()`:
+
+| Method | Purpose |
+|---|---|
+| `given( name, value )` / `givenAll( struct, overwrite=true )` | Supply facts (on a RuleBook these are usually passed to `run()` instead) |
+| `when( ( facts ) => boolean )` | The condition. One per rule; must return a boolean. Omitted means always true |
+| `except( ( facts ) => boolean )` | Cancels the rule when it returns `true`, even if `when()` passed |
+| `then( ( facts, result ) => ... )` | An action. A rule can have several, run in order. Returning `true` breaks that rule's `then()` chain; `void`/`false` continues |
+| `using( "fact1,fact2" )` | Restricts the facts passed to the next `then()`. Takes a list or an array; chained `using()` calls add up |
+| `withPriority( n )` | Higher runs earlier. Default `0`; ties keep insertion order. Can be set before or after `addRule()` |
+| `stop()` | After this rule fires, no further rules run |
+| `active( from, until )` | Only evaluate the rule inside a date window; either bound can be omitted. Outside it the rule is `SKIPPED` |
 
 ```js
-class LoanEligibilityService {
+class extends="rulebox.models.RuleBook"{
 
-    property name="ruleEngine" inject="RuleEngine@rulebox";
+	function defineRules(){
+		addRule(
+			newRule( "checkBlocklist" )
+				.withPriority( 10 )
+				.when( ( facts ) => facts.applicant.isBlocklisted() )
+				.then( ( facts, result ) => result.setValue( 0 ) )
+				.stop()
+		)
+		addRule(
+			newRule( "dispenseCash" )
+				.when( ( facts ) => facts.balance > 100 )
+				.except( ( facts ) => facts.accountDisabled )
+				.then( ( facts, result ) => result.setValue( facts.balance - 100 ) )
+		)
+		addRule(
+			newRule( "greetBoth" )
+				.when( ( facts ) => facts.keyExists( "hello" ) && facts.keyExists( "world" ) )
+				.using( "hello" )
+				.then( ( facts ) => println( facts.hello ) )
+				.using( "world" )
+				.then( ( facts ) => println( facts.world ) )
+		)
+		addRule(
+			newRule( "blackFridayPromo" )
+				.active( from : "2026-11-27", until : "2026-12-01" )
+				.then( ( facts, result ) => result.setValue( result.getValue() * 0.8 ) )
+		)
+	}
 
-    LoanEligibilityService function init() {
-        ruleEngine.define( "loan_eligibility", [
-
-            // Must be of legal age
-            ruleEngine.newRule()
-                .when( function( c ) { return c.age < 18 } )
-                .then( function( c ) {
-                    c.approved = false
-                    c.reasons.append( "Applicant must be 18 or older" )
-                } ),
-
-            // Credit score check
-            ruleEngine.newRule()
-                .when( function( c ) { return c.creditScore < 620 } )
-                .then( function( c ) {
-                    c.approved = false
-                    c.reasons.append( "Credit score below minimum threshold" )
-                } ),
-
-            // Income check
-            ruleEngine.newRule()
-                .when( function( c ) { return c.annualIncome < c.requestedAmount * 3 } )
-                .then( function( c ) {
-                    c.approved = false
-                    c.reasons.append( "Income insufficient for requested amount" )
-                } ),
-
-            // Approve if no disqualifiers
-            ruleEngine.newRule()
-                .when( function( c ) { return c.reasons.len() == 0 } )
-                .then( function( c ) { c.approved = true } )
-
-        ] )
-        return this
-    }
-
-    struct function evaluate( application ) {
-        var context = {
-            age             : application.age,
-            creditScore     : application.creditScore,
-            annualIncome    : application.annualIncome,
-            requestedAmount : application.amount,
-            approved        : false,
-            reasons         : []
-        }
-
-        ruleEngine.run( "loan_eligibility", context )
-
-        return {
-            approved : context.approved,
-            reasons  : context.reasons
-        }
-    }
 }
 ```
 
-### Pricing Rule Engine
+## Facts and Results
+
+Facts live in a struct and are passed by reference to every rule. Key them off simple values or
+domain objects, whichever reads better:
 
 ```js
-ruleEngine.define( "pricing", [
-
-    ruleEngine.newRule()
-        .when( function( c ) { return c.isVip } )
-        .then( function( c ) { c.discount += 0.20 } ),
-
-    ruleEngine.newRule()
-        .when( function( c ) { return c.orderTotal >= 500 } )
-        .then( function( c ) { c.discount += 0.10 } ),
-
-    ruleEngine.newRule()
-        .when( function( c ) { return c.couponCode == "SAVE15" } )
-        .then( function( c ) { c.discount += 0.15 } ),
-
-    ruleEngine.newRule()
-        .when( function( c ) { return c.discount > 0.35 } )
-        .then( function( c ) { c.discount = 0.35 } )   // max 35% discount
-
-] )
-
-var context = {
-    isVip      : userService.isVip( userId ),
-    orderTotal : orderTotal,
-    couponCode : rc.couponCode ?: "",
-    discount   : 0.0
-}
-
-ruleEngine.run( "pricing", context )
-var finalPrice = orderTotal * ( 1 - context.discount )
+.when( ( facts ) => facts.creditScore < 600 )
+.when( ( facts ) => facts.applicant.getCreditScore() < 600 )
 ```
+
+- `run( facts )` is a shortcut for `givenAll( facts )` then `run()`. Passed facts replace existing ones of the same name; `run( facts, false )` keeps the ones already set.
+- `withDefaultResult( value )` seeds the result; otherwise it starts as `null`. Struct, array and query defaults are deep-copied, so rules never mutate the default.
+- The **same** `Result` instance flows through every `then()`, so rules accumulate onto it, much like `reduce`.
+- `run()` resets the result to its default at the start of every run.
+
+| `Result` method | Description |
+|---|---|
+| `setValue( value )` / `getValue()` | Set or read the value |
+| `isPresent()` | `true` if a value is set or defaulted (falsy values such as `0`, `""` and `false` count) |
+| `ifPresent( ( value ) => ... )` | Call the closure only if the value is not `null` |
+| `orElse( other )` | The value, or `other` when absent |
+| `orElseGet( () => ... )` | The value, or the closure's return when absent |
+| `reset()` | Back to the default value |
+
+### A complete example
+
+```js
+// models/HomeLoanRateRuleBook.bx
+class extends="rulebox.models.RuleBook"{
+
+	function defineRules(){
+		// A credit score under 600 pays 4x the rate, and nothing else applies
+		addRule(
+			newRule( "lowCredit" )
+				.when( ( facts ) => facts.applicant.getCreditScore() < 600 )
+				.then( ( facts, result ) => result.setValue( result.getValue() * 4 ) )
+				.stop()
+		)
+		// 600 to 699 pays one extra point
+		addRule(
+			newRule( "fairCredit" )
+				.when( ( facts ) => facts.applicant.getCreditScore() < 700 )
+				.then( ( facts, result ) => result.setValue( result.getValue() + 1 ) )
+		)
+		// 700+ with $25,000 cash on hand gets a quarter point off
+		addRule(
+			newRule( "goodCreditWithCash" )
+				.when( ( facts ) => facts.applicant.getCreditScore() >= 700 && facts.applicant.getCashOnHand() >= 25000 )
+				.then( ( facts, result ) => result.setValue( result.getValue() - 0.25 ) )
+		)
+		// First-time buyers get 20% off the adjusted rate
+		addRule(
+			newRule( "firstTimeBuyer" )
+				.when( ( facts ) => facts.applicant.getFirstTimeHomeBuyer() )
+				.then( ( facts, result ) => result.setValue( result.getValue() * 0.80 ) )
+		)
+	}
+
+}
+```
+
+```js
+// handlers/Loans.bx
+class{
+
+	function rate( event, rc, prc ){
+		return getInstance( "HomeLoanRateRuleBook" )
+			.withDefaultResult( 4.5 )
+			.run( { applicant : new models.Applicant( 650, 20000, true ) } )
+			.getResult()
+			.getValue()
+		// 4.4: 4.5 + 1 = 5.5, then 20% off
+	}
+
+}
+```
+
+## The Builder
+
+`Builder@rulebox` (a thread-safe singleton) builds rules and rulebooks at runtime, with no class.
+Use it when rules are assembled from user choices, settings or data; use a RuleBook class when the
+rules are fixed, so they can be named, reused and tested.
+
+```js
+class singleton{
+
+	@inject( "Builder@rulebox" )
+	property name="builder";
+
+	function greet( name ){
+		return variables.builder.rulebook( "Greeter" )
+			.addRule( variables.builder.rule( "hello" ).then( ( facts, result ) => result.setValue( "Hello " & facts.name ) ) )
+			.addRule( variables.builder.rule( "shout" ).then( ( facts, result ) => result.setValue( result.getValue() & "!" ) ) )
+			.run( { name : arguments.name } )
+			.getResult()
+			.getValue()
+	}
+
+}
+```
+
+`builder.rulebook( name="" )` returns a normal `RuleBook`, so every RuleBook method works on it,
+including `loadRules()`. `builder.rule( name )` returns a standalone `Rule`.
+
+## Thread Safety
+
+`RuleBook` and `Rule` are **transients**: `given()` and `run( facts )` write facts, the result and
+the audit trail onto the instance. A RuleBook instance is not safe to share between requests or
+threads.
+
+- Call `getInstance( "MyRuleBook" )` where you use it, every time.
+- Never keep a RuleBook in a singleton property or a shared scope, and never `inject="MyRuleBook"` into a singleton (it would keep one instance for its whole life).
+- For declared rulebooks, `ruleBook( "name" )` and `RuleBookRegistry.getRuleBook( "name" )` return a fresh instance on every call.
+- `inject="rulebook:name"` injects a small provider, not a RuleBook. Call `.get()` at the point of use, so it is safe even in a singleton:
+
+```js
+class singleton{
+
+	@inject( "rulebook:credit" )
+	property name="creditRules";
+
+	function decide( score ){
+		return variables.creditRules.get()
+			.run( { creditScore : arguments.score } )
+			.getResult()
+			.getValue()
+	}
+
+}
+```
+
+## Rules as Data: JSON, YAML and Databases
+
+`RuleBook.loadRules( source )` turns external rule definitions into real `Rule`s, with the same
+priority chain, audit trail and `dryRun()` support. A definition can never carry code, so a file or
+table from an untrusted source is safe to load.
+
+### The rule-definition schema
+
+| Key | Meaning |
+|---|---|
+| `name` | The rule's name (for auditing) |
+| `priority` | Same as `withPriority()`; default `0` |
+| `activeFrom` / `activeUntil` | Same as `active()`; either can be omitted |
+| `when` / `except` | A condition node, or a `{ "predicate": "name", "params": {} }` reference |
+| `then` | An array of `{ "action": "name", "params": {} }` references |
+| `using` | An array of fact names applied to every `then` action |
+| `stop` | `true` to stop the chain after this rule fires |
+
+```json
+[
+	{
+		"name": "highRisk",
+		"priority": 10,
+		"when": { "lt": [ "creditScore", 600 ] },
+		"then": [ { "action": "flagHighRisk" } ],
+		"stop": true
+	},
+	{
+		"name": "approve",
+		"when": { "gte": [ "creditScore", 600 ] },
+		"then": [ { "action": "approveApplicant", "params": { "reason": "good credit" } } ]
+	}
+]
+```
+
+### The condition grammar
+
+A safe, declarative tree with no `eval`. Each node is a struct with exactly one operator:
+
+| Operator | Shape | Meaning |
+|---|---|---|
+| `eq` / `neq` | `[ "factPath", value ]` | Equals / not equals |
+| `lt` / `lte` / `gt` / `gte` | `[ "factPath", value ]` | Numeric or date comparison |
+| `in` | `[ "factPath", [ values ] ]` | The fact is one of the values |
+| `and` / `or` | `[ node, node, ... ]` | All / any of the child nodes |
+| `not` | `node` | Negates the child node |
+
+`factPath` supports dot notation into nested facts (`"applicant.address.state"`), and a missing
+path resolves to `null` instead of throwing.
+
+```json
+{
+	"and": [
+		{ "eq": [ "state", "CA" ] },
+		{ "or": [
+			{ "lt": [ "creditScore", 600 ] },
+			{ "not": { "eq": [ "flagged", true ] } }
+		] }
+	]
+}
+```
+
+- `loadRules()` validates every definition up front. A malformed node throws `RuleBox.InvalidRuleDefinitionException` naming the rule (or its 1-based position) and the path, such as `when.and[2].lt`. Nothing is added from a source that fails.
+- A `{ "predicate": ... }` reference is allowed only at the top level of `when`/`except`, not nested inside `and`/`or`/`not`. Put compound logic in one registered predicate instead.
+
+### Registered actions and predicates
+
+Definitions reference code by name, so register it on the RuleBook **before** `loadRules()`:
+
+```js
+ruleBook
+	.registerPredicate( "isEligible", ( facts, params ) => facts.creditScore >= params.threshold )
+	.registerAction( "approveApplicant", ( facts, result, params ) => result.setValue( params.reason ) )
+	.registerAction( "flagHighRisk", "RiskService@myModule" )
+	.loadRules( new rulebox.models.JSONRuleSource( expandPath( "/config/rules/credit.json" ) ) )
+```
+
+Each accepts a closure, an object with `execute( facts, result, params )` (actions) or
+`test( facts, params )` (predicates) (`RuleAction`/`RulePredicate` document the optional contract),
+or a WireBox ID string resolved immediately. A name used by a definition but never registered throws
+`RuleBox.UnregisteredActionException` / `RuleBox.UnregisteredPredicateException` from `loadRules()`.
+
+### Rule sources
+
+```js
+// JSON file: an array of definitions
+ruleBook.loadRules( new rulebox.models.JSONRuleSource( "/path/to/rules.json" ) )
+
+// YAML file: same schema (needs bx-yaml)
+ruleBook.loadRules( new rulebox.models.YAMLRuleSource( "/path/to/rules.yaml" ) )
+
+// Database: a datasource and SQL, or a query you already have
+ruleBook.loadRules( new rulebox.models.DBRuleSource( datasource = "myApp", sql = "SELECT * FROM rules WHERE ruleset = 'credit'" ) )
+ruleBook.loadRules( new rulebox.models.DBRuleSource( query = myQuery ) )
+```
+
+`DBRuleSource` columns: `name`, `priority`, `active_from`, `active_until`, `when_json`,
+`except_json`, `then_json`, `stop`, `using_facts` (a comma-delimited list). The `*_json` columns
+hold the same JSON as a JSON rule file. `stop` accepts `true/false`, `1/0`, `yes/no`, `y/n`. A bad
+row throws `RuleBox.InvalidRuleRowException` naming the rule and column.
+
+Any object with a `load()` method that returns an array of definitions is a valid source (a REST
+call, a cache, a config service). There is no interface to implement.
+
+RuleBox never watches files or tables. Call `ruleBook.reloadRules( source )` when you decide to pick
+up edits. It is `clearRules()` (rules and audit trail) followed by `loadRules( source )`; registered
+actions, predicates and metrics are kept.
+
+## Declared Rulebooks
+
+For apps with several named rulebooks, declare them in config and let `RuleBookRegistry@rulebox`
+build them:
+
+```js
+// config/ColdBox.bx
+moduleSettings = {
+	rulebox : {
+		rulebooks : {
+			// A string: a rule file path (JSON or YAML by extension), relative to the app root
+			"credit" : "config/rules/creditscore.yaml",
+			// An array: inline rule definitions
+			"promo" : [
+				{ "name" : "blackFriday", "then" : [ { "action" : "applyDiscount" } ] }
+			],
+			// A struct: a source plus the actions/predicates it references (WireBox IDs only)
+			"shipping" : {
+				"source"     : "config/rules/shipping.json",
+				"actions"    : { "applyDiscount" : "PromoActions@myModule" },
+				"predicates" : { "isEligible" : "PromoPredicates@myModule" }
+			},
+			// A database source needs the struct form
+			"fraud" : {
+				"source" : { "type" : "db", "datasource" : "myApp", "sql" : "SELECT * FROM rules WHERE ruleset = 'fraud'" }
+			}
+		}
+	}
+}
+```
+
+- Any `*.json`, `*.yaml` or `*.yml` file in the convention folder (default `config/rulebox`, change it with `conventionPath`) is discovered automatically; the rulebook's name is the file name. Two files with the same name throw `RuleBox.DuplicateRuleBookException`.
+- An explicit config entry with the same name as a discovered file layers its `actions`/`predicates` on top.
+- Config can only reference WireBox IDs. To use a closure, get the rulebook and call `registerAction()` yourself.
+
+Getting a declared rulebook (each call builds a **fresh** RuleBook):
+
+```js
+ruleBook( "credit" )                                                 // handlers, views, layouts
+getInstance( "RuleBookRegistry@rulebox" ).getRuleBook( "credit" )    // anywhere
+property name="creditRules" inject="rulebook:credit";                // a provider: creditRules.get()
+property name="registry" inject="rulebook";                          // the registry itself
+```
+
+`getInstance( "RuleBookRegistry@rulebox" ).reload()` re-reads config and the convention folder
+without a restart.
+
+## Auditing, Dry Runs and Metrics
+
+### Dry run
+
+`dryRun( facts )` previews which rules *would* fire, without running any `then()`, touching the
+result, the facts, the audit trail or metrics. It stops where a real run would stop.
+
+```js
+var report = getInstance( "HomeLoanRateRuleBook" ).dryRun( { applicant : applicant } )
+// [ { name : "lowCredit", wouldExecute : false, wouldStop : false }, { name : "fairCredit", wouldExecute : true, wouldStop : false }, ... ]
+```
+
+A single `Rule` can be dry-run without a RuleBook:
+`builder.rule( "lowScore" ).when( ( facts ) => facts.creditScore < 600 ).stop().dryRun( { creditScore : 550 } )`.
+
+### The audit trail
+
+Every rule has a state from `ruleBook.RULE_STATES`. `run()` resets all of them to `REGISTERED` first.
+
+| State | Meaning |
+|---|---|
+| `REGISTERED` | Added, not evaluated this run (also every rule after a `stop()` or a failure) |
+| `EXECUTED` | `when()` passed, `except()` did not, and the actions completed |
+| `SKIPPED` | `when()`/`except()` did not pass, or the rule is outside its `active()` window |
+| `STOPPED` | Executed, then `stop()` ended the chain |
+| `FAILED` | Evaluating the rule threw |
+
+```js
+var rulebook = getInstance( "HomeLoanRateRuleBook" ).withDefaultResult( 4.5 ).run( facts )
+rulebook.getRuleStatus( "fairCredit" )   // "EXECUTED"; an unknown name returns "NOT_AVAILABLE"
+rulebook.getRuleStatusMap()              // { lowCredit : "SKIPPED", fairCredit : "EXECUTED", ... }
+```
+
+### Rule metrics
+
+Each RuleBook instance also keeps running metrics per rule across every `run()` on that instance
+(they are not reset by `run()`):
+
+```js
+rulebook.getRuleMetrics( "fairCredit" )
+// { name, totalEvaluations, countsByState, totalDurationMs, avgDurationMs, minDurationMs, maxDurationMs,
+//   completed, failed, completionRate, errorRate, lastError, errors, firstRunAt, lastRunAt, ... }
+rulebook.getRuleMetricsMap()   // every rule's metrics, ready to serialize
+rulebook.resetMetrics()
+```
+
+`completed` counts `EXECUTED`, `SKIPPED` and `STOPPED`; `failed` counts `FAILED`. Once a rule fails,
+`lastError` holds `{ type, message, at, fingerprint }` and `errors` lists its distinct errors (each
+stored once with a `count`, its cause chain, BoxLang frames and raw Java trace). For metrics across
+instances and restarts, use the Visualizer's metrics store.
+
+## Error Handling
+
+- A throw from `when()`, `except()`, a `then()` action, or an unreadable `active()` date marks the rule `FAILED` in the audit trail and metrics, **then re-throws** to your code. Later rules stay `REGISTERED`.
+- Calling `run()` on a `Rule` that was never added to a RuleBook throws `RuleBox.RuleNotAttachedException`. Build rules through a RuleBook or the Builder.
+
+```js
+var rulebook = getInstance( "PaymentRules" )
+try{
+	rulebook.run( facts )
+} catch( any e ){
+	// The audit trail already says which rule threw
+	var failedRules = rulebook.getRuleStatusMap().filter( ( name, state ) => state == "FAILED" ).keyList()
+	writeLog( text = "RuleBox rule [#failedRules#] failed: #e.message#", type = "error" )
+	rethrow
+}
+```
+
+| Exception | Thrown when |
+|---|---|
+| `RuleBox.DuplicateRuleNameException` | Adding a rule whose name is already used in the RuleBook |
+| `RuleBox.RuleNotAttachedException` | Running a `Rule` that is not in a RuleBook |
+| `RuleBox.InvalidRuleDefinitionException` | `loadRules()` finds a malformed definition or condition |
+| `RuleBox.UnregisteredActionException` / `RuleBox.UnregisteredPredicateException` | A definition references an action/predicate that was never registered |
+| `RuleBox.InvalidRuleRowException` | A `DBRuleSource` row has a bad column value |
+| `RuleBox.DuplicateRuleBookException` | Two convention files map to the same rulebook name |
+
+## The Rule Visualizer
+
+An admin UI for declared rulebooks: a dashboard with problem rules and slowest rules, the real
+execution chain of each rulebook, a dry-run playground, per-rule health with errors and stack traces,
+and a live tracker that streams every rule evaluation over server-sent events.
+
+```js
+moduleSettings = {
+	rulebox : {
+		visualizer : {
+			enabled        : true,                            // default false
+			metricsStore   : "InMemoryMetricsStore@rulebox",  // or "SQLiteMetricsStore@rulebox", or your IMetricsStore
+			datasourceName : "rulebox_visualizer",            // only read by SQLiteMetricsStore
+			maxStreams     : 25                               // open Live Tracker connections allowed at once
+		}
+	}
+}
+```
+
+- It lives at `/rulebox-visualizer/visualizer/index` (also `chain?name=`, `dryrun`, `metrics`, `live`).
+- While `enabled` is `false` (the default), every route returns 404 and RuleBox records no metrics and broadcasts nothing.
+- **RuleBox does not secure it.** It shows rule names, error messages and stack traces (file paths included), so protect `/rulebox-visualizer` with a cbsecurity rule or your own auth before enabling it outside development.
+- `InMemoryMetricsStore` (the default) needs no setup but resets on restart. `SQLiteMetricsStore` persists to a `rulebox_events` table and needs `bx-sqlite` plus a datasource named by `datasourceName`. Its optional `retentionDays` (30), `maxStoredEvents` (100000), `circuitBreakerThreshold` (5) and `circuitBreakerCooldownSeconds` (60) settings bound its growth and failures.
+- A custom store implements `IMetricsStore@rulebox` (`recordEvent`, `queryEvents`, `queryRuleBookSummary`, `queryRuleMetrics`, `queryAllRuleMetrics`, `queryRuleErrors`, `queryRuleBookNames`, `reset`).
+- Settings are validated when the app starts; a bad value throws naming the key.
+
+```js
+// Application.bx: the datasource for SQLiteMetricsStore
+this.datasources = {
+	rulebox_visualizer : {
+		driver   : "sqlite",
+		database : "./.database/rulebox_visualizer.db"
+	}
+}
+```
+
+## Testing Rulebooks
+
+Rulebooks are plain transients, so test them directly with TestBox. Get a fresh instance per spec,
+then assert on the result and the audit trail:
+
+```js
+class extends="coldbox.system.testing.BaseTestCase" appMapping="/root"{
+
+	function beforeEach(){
+		setup()
+	}
+
+	function run(){
+		describe( "Home loan rates", () => {
+			it( "gives a first-time buyer with a 650 score 4.4", () => {
+				var rulebook = getInstance( "HomeLoanRateRuleBook" )
+					.withDefaultResult( 4.5 )
+					.run( { applicant : new models.Applicant( 650, 20000, true ) } )
+
+				expect( rulebook.getResult().getValue() ).toBe( 4.4 )
+				expect( rulebook.getRuleStatus( "fairCredit" ) ).toBe( "EXECUTED" )
+				expect( rulebook.getRuleStatus( "goodCreditWithCash" ) ).toBe( "SKIPPED" )
+			} )
+
+			it( "stops after the low credit rule", () => {
+				var report = getInstance( "HomeLoanRateRuleBook" )
+					.dryRun( { applicant : new models.Applicant( 550, 0, true ) } )
+
+				expect( report ).toHaveLength( 1 )
+				expect( report[ 1 ].wouldStop ).toBeTrue()
+			} )
+		} )
+	}
+
+}
+```
+
+- Test JSON/YAML rules by loading them into a Builder rulebook with the same registered actions as production, or test a declared rulebook through `getInstance( "RuleBookRegistry@rulebox" ).getRuleBook( "name" )`.
+- `DBRuleSource( query = queryNew( ... ) )` tests database-driven rules without a database.
+- Use `dryRun()` to assert which rules would fire without running their side effects.
 
 ## Best Practices
 
-- **Use named rule sets** for collections of related rules — enables `run("name", context)` calls
-- **Keep individual rules focused** — one condition, one consequence
-- **Treat context as a mutable struct** — rules communicate through shared context state
-- **Test rules independently** — call `.run(context)` directly in TestBox specs
-- **Avoid side effects with external I/O** in rule closures — rules should only modify context
-- **Order rules carefully** — later rules can read decisions made by earlier rules in the set
-- **Use `otherwise()`** for explicit fallback behavior rather than relying on default context state
+- **Name every rule.** The audit trail, metrics, errors and Visualizer are keyed by name.
+- **One concern per rule.** One condition and one outcome; compose with priority and `stop()` instead of large closures.
+- **Get a fresh RuleBook per use.** Never cache one in a singleton or shared scope; use `getInstance()`, `ruleBook( "name" )` or an `inject="rulebook:name"` provider.
+- **Accumulate through the `Result`**, seeded with `withDefaultResult()`, instead of mutating facts.
+- **Keep actions small.** Put I/O and heavy logic in services and call them from a registered action or `then()`.
+- **Use rules as data for business-owned thresholds**, and keep code-heavy logic in registered predicates and actions.
+- **Prefer `dryRun()`** to preview or explain decisions without side effects.
+- **Secure the Visualizer** before enabling it anywhere but development.
 
 ## Documentation
 
-- rulebox: https://github.com/coldbox-modules/rulebox
+- RuleBox docs: https://rulebox.coldbox.org
+- Tutorial course: https://rulebox.coldbox.org/course/
+- Source: https://github.com/coldbox-modules/rulebox
+- ForgeBox: https://forgebox.io/view/rulebox

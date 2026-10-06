@@ -211,7 +211,7 @@ The [`.claude-plugin/plugin.json`](./.claude-plugin/plugin.json) registers these
 | [`quick`](./modules/quick/SKILL.md) | Quick Active Record entities, CRUD, relationships, query scopes, eager loading, accessors/mutators, global scopes |
 | [`relax`](./modules/relax/SKILL.md) | REST API modeling with Relax DSL, route definitions, response schemas, JSON/XML spec generation |
 | [`route-visualizer`](./modules/route-visualizer/SKILL.md) | Route inspection UI, route table output, development-only access restriction |
-| [`rulebox`](./modules/rulebox/SKILL.md) | Business rules engine, when/then/otherwise closures, named rule sets, chaining rules, policy evaluation |
+| [`rulebox`](./modules/rulebox/SKILL.md) | Natural-language rules engine, RuleBook classes, given/when/except/then DSL, rules from JSON/YAML/DB, declared rulebooks, audit trail, `dryRun()`, Rule Visualizer, testing |
 | [`s3sdk`](./modules/s3sdk/SKILL.md) | Amazon S3 / S3-compatible storage, bucket ops, upload/download/delete, presigned URLs, multipart uploads |
 | [`socketbox`](./modules/socketbox/SKILL.md) | Real-time WebSocket apps, onConnect/onDisconnect/onMessage hooks, broadcasting to rooms, JavaScript integration |
 | [`unleashsdk`](./modules/unleashsdk/SKILL.md) | Feature flags, `isEnabled()`, `getVariant()` for A/B testing, custom context, gradual rollout strategies |
