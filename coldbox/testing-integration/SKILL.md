@@ -125,6 +125,27 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="/root" {
 }
 ```
 
+## Testing Routes Protected by Middleware
+
+*ColdBox 8.3+.* `execute()`, and the `get()`, `post()` and similar helpers built on it, run route-scoped
+middleware (`Router.middleware()`) in the same order as a real request: after the global `preProcess`
+interceptors and before the global `postProcess`. A secured route can be asserted end to end:
+
+```boxlang
+it( "redirects guests away from the admin area", () => {
+    var event = get( "/admin" )
+    expect( event.getValue( "relocate_event" ) ).toBe( "main.login" )
+} )
+
+it( "blocks the request when the firewall action is block", () => {
+    var renderData = get( "/api/orders" ).getRenderData()
+    expect( renderData.statusCode ).toBe( 401 )
+} )
+```
+
+On ColdBox versions before 8.3 route middleware is skipped inside `execute()`, so a middleware-protected route
+looks open in tests.
+
 ## Database Transaction Rollback Pattern
 
 ```boxlang

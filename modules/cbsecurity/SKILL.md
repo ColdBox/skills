@@ -3,7 +3,8 @@ name: cbsecurity
 description: >
   Use this skill when securing ColdBox/BoxLang applications with cbsecurity. Covers firewall rule
   configuration, annotation-based security on handlers/actions, JWT authentication, role and permission
-  checks, security context helpers, custom validators, interceptor events, and production hardening patterns.
+  checks, route middleware (Authenticated, Authorized, JwtAuth, BasicAuth), security context helpers,
+  custom validators, interceptor events, and production hardening patterns.
 applyTo: "**/*.{bx,cfc,cfm,bxm}"
 ---
 
@@ -14,6 +15,7 @@ applyTo: "**/*.{bx,cfc,cfm,bxm}"
 Load this skill when:
 - Protecting handlers and actions with annotation-based security
 - Configuring firewall rules for route-level access control
+- Securing routes and route groups where they are declared with route middleware
 - Implementing JWT-based API authentication
 - Checking roles, permissions, or authentication status in code
 - Writing custom security validators or user services
@@ -104,6 +106,49 @@ class UsersHandler extends coldbox.system.EventHandler {
 }
 ```
 
+## Route Middleware
+
+*cbsecurity 3.9+ on ColdBox 8.2+.* Secure a route, or a group, where it is declared, with no firewall
+rules. Denied requests go through the firewall's invalid access flow, so the `redirect`, `override` and
+`block` actions, module overrides, interception points and logging behave like a rule or annotation.
+
+| WireBox ID | Verifies |
+|---|---|
+| `Authenticated@cbsecurity` | The user is logged in. Route `meta` is ignored. |
+| `Authorized@cbsecurity` | Logged in and satisfying the route `meta` `permissions` and/or `roles` |
+| `JwtAuth@cbsecurity` | Like `Authorized`, authenticating through the JWT validator |
+| `BasicAuth@cbsecurity` | Like `Authorized`, authenticating through the Basic Auth validator |
+
+Permissions and roles live in the route `meta()`: `permissions` and `roles` take one value, a list or an
+array, and `mode` is `any` (default), `all` or `none` for the permissions.
+
+```js
+route( "/account" ).middleware( "Authenticated@cbsecurity" ).to( "account.index" )
+
+route( "/billing" )
+    .middleware( "Authorized@cbsecurity" )
+    .meta( { permissions: "BILLING_READ,BILLING_WRITE", mode: "all" } )
+    .to( "billing.index" )
+
+// a group shares middleware and meta (group meta needs ColdBox 8.3+)
+group( { pattern: "/admin", middleware: [ "Authorized@cbsecurity" ], meta: { permissions: "ADMIN" } }, () => {
+    route( "/users" ).to( "admin.users" )
+    route( "/status" ).withoutMiddleware( "Authorized@cbsecurity" ).to( "admin.status" )
+} )
+```
+
+Things to know:
+- **Parameters go in `meta()`**, not in the middleware string. A router file loads before modules, so
+  a factory such as `getInstance( "SomeFactory@cbsecurity" )` cannot be called inside `Router.configure()`.
+- The **firewall interceptor must be loaded** (`firewall.autoLoadFirewall`, default `true`), otherwise
+  `cbsecurity.MiddlewareRequiresFirewall` is thrown. No firewall rules are needed.
+- The JWT validator checks **permissions only** (token scopes or user permissions). `roles` in the route
+  meta are not evaluated for JWT requests.
+- Global firewall rules and annotations run first, then the route middleware.
+- Custom middleware: extend `cbsecurity.models.middleware.Guard` and call
+  `super.init( permissions = "ADMIN", useMeta = false )`.
+- To use a short name, alias it with ColdBox 8.3+: `registerMiddleware( "auth", "Authenticated@cbsecurity" )`.
+
 ## Security Context (In Code)
 
 ```js
@@ -173,10 +218,11 @@ class {
 ### Securing API Routes
 
 ```js
-// router.bx — secure all /api routes via JWT
-route( "/api/profile" )
-    .withMiddleware( "JwtAuthFilter@cbsecurity" )
-    .toAction( "API/Profile/index" )
+// config/Router.bx: secure all /api routes via JWT (see Route Middleware above)
+group( { pattern: "/api", middleware: [ "JwtAuth@cbsecurity" ] }, () => {
+    route( "/profile" ).to( "API.Profile.index" )
+    route( "/orders/:id" ).meta( { permissions: "ORDERS_WRITE" } ).to( "API.Orders.update" )
+} )
 ```
 
 ## IUserService Required Methods

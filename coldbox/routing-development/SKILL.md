@@ -1,6 +1,6 @@
 ---
 name: coldbox-routing-development
-description: "Use this skill when configuring ColdBox routes, setting up RESTful resource routes, creating route groups, implementing URL pattern matching with constraints, defining named routes, answering a route inline with a toResponse() closure, attaching route-scoped middleware with .middleware()/middlewareGroup()/.withoutMiddleware(), declaring route-level cache rules with Router.withCache(), streaming a route with Router.toSSE(), exposing BoxLang AI surfaces with the toAi(), toMCP() and toAiGateway() route terminators, or working with Router.cfc in a ColdBox application."
+description: "Use this skill when configuring ColdBox routes, setting up RESTful resource routes, creating route groups, implementing URL pattern matching with constraints, defining named routes, answering a route inline with a toResponse() closure, attaching route-scoped middleware with .middleware()/middlewareGroup()/registerMiddleware()/.withoutMiddleware(), sharing route metadata through a group() meta option, declaring route-level cache rules with Router.withCache(), streaming a route with Router.toSSE(), exposing BoxLang AI surfaces with the toAi(), toMCP() and toAiGateway() route terminators, or working with Router.cfc in a ColdBox application."
 applyTo: "**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
@@ -145,7 +145,7 @@ group(
 // Authenticated group (with CBSecurity middleware)
 group(
     pattern    = "/dashboard",
-    middleware = "cbsecurity"
+    middleware = [ "Authenticated@cbsecurity" ]
 ) {
     route( "/", "dashboard.index" )
     route( "/profile", "dashboard.profile" )
@@ -376,6 +376,50 @@ by target name, by the group name it expanded from, or `"*"` for everything:
 
 ```boxlang
 route( "/health" ).withoutMiddleware( "*" ).toHandler( "health" )
+```
+
+### Registering Named Middleware
+
+*ColdBox 8.3+.* `registerMiddleware( name, target, point = "preProcess", force = false )` gives a
+closure, lambda, object instance or WireBox ID a name, so it can be reused across routes without a
+one-member `middlewareGroup()`:
+
+```boxlang
+registerMiddleware( "NoCache", ( event, rc, prc ) => {
+    event.setHTTPHeader( name = "Cache-Control", value = "no-store" )
+}, "postProcess" )
+
+registerMiddleware( "auth", "Authenticated@cbsecurity" )   // alias a WireBox ID
+
+// bulk form: a struct of name : target pairs
+registerMiddleware( { auth : "Authenticated@cbsecurity", noCache : someClosure } )
+
+route( "/account" ).middleware( [ "auth", "NoCache" ] ).to( "account.index" )
+route( "/status" ).withoutMiddleware( "NoCache" ).to( "status.index" )
+```
+
+- Registering a name that already exists, including a `middlewareGroup()` name, throws
+  `Router.DuplicateMiddleware` unless `force = true`. A bad name or a missing target throws
+  `Router.InvalidMiddleware`.
+- In the bulk form `force` must be passed by name together with the other arguments:
+  `registerMiddleware( name = { ... }, force = true )`, because CFML cannot mix positional and named arguments.
+- Names share the namespace of `middlewareGroup()`. Register a name **before** any `.middleware()` or
+  `group()` call that references it, otherwise it is silently treated as a literal WireBox ID.
+- The registry belongs to the router instance. Middleware that must be shared with module routers
+  should be a WireBox mapping referenced by ID.
+
+### Sharing Route Metadata With a Group
+
+*ColdBox 8.3+.* A `group()` accepts a `meta` struct that every route inside inherits. Keys merge
+shallowly, an inner group overrides an outer one and the route's own `.meta()` wins. Middleware can
+read the result with `event.getCurrentRouteMeta()`, which is how cbsecurity's `Authorized@cbsecurity`
+learns the permissions a route needs:
+
+```boxlang
+group( { pattern: "/admin", middleware: [ "Authorized@cbsecurity" ], meta: { permissions: "ADMIN" } }, () => {
+    route( "/users" ).toHandler( "admin.users" )
+    route( "/audit" ).meta( { permissions: "AUDITOR" } ).toHandler( "admin.audit" )
+} )
 ```
 
 ---
