@@ -3,7 +3,8 @@ name: cbsecurity
 description: >
   Use this skill when securing ColdBox/BoxLang applications with cbsecurity. Covers firewall rule
   configuration, annotation-based security on handlers/actions, JWT authentication, role and permission
-  checks, route middleware (Authenticated, Authorized, JwtAuth, BasicAuth), security context helpers,
+  checks, route middleware (Authenticated, Authorized, JwtAuth, BasicAuth, Throttle, ApiKey, AllowedIPs, DenyIPs,
+  EnsureHttps, VerifyCsrf, Honeypot, Signed), signed URLs, security context helpers,
   custom validators, interceptor events, and production hardening patterns.
 applyTo: "**/*.{bx,cfc,cfm,bxm}"
 ---
@@ -148,6 +149,60 @@ Things to know:
 - Custom middleware: extend `cbsecurity.models.middleware.Guard` and call
   `super.init( permissions = "ADMIN", useMeta = false )`.
 - To use a short name, alias it with ColdBox 8.3+: `registerMiddleware( "auth", "Authenticated@cbsecurity" )`.
+
+### Abuse Protection Middleware
+
+These do not authenticate. They answer denied requests directly with a JSON error and the right status
+code (not the firewall's invalid actions). Parameters go in the route `meta()`, defaults in the
+`middleware` and `signedUrls` module settings.
+
+| WireBox ID | Does | Route `meta()` keys |
+|---|---|---|
+| `Throttle@cbsecurity` | Rate limit, `429` + `Retry-After` | `throttle`: a named limiter string or `{ maxAttempts, decaySeconds, cacheProvider, by, name }` |
+| `ApiKey@cbsecurity` | `401` without a valid key | `apiKeys`, `apiKeyHeader` (default `x-api-key`), `apiKeyParam` (default `apiKey`) |
+| `AllowedIPs@cbsecurity` | `403` unless the IP is listed | `allowedIps` (IPv4, IPv6, CIDR) |
+| `DenyIPs@cbsecurity` | `403` if the IP is listed | `denyIps` |
+| `EnsureHttps@cbsecurity` | `301` for GET/HEAD, `403` otherwise | `redirectToHttps` |
+| `VerifyCsrf@cbsecurity` | `403` without a valid cbcsrf token on unsafe methods | `csrfKey` |
+| `Honeypot@cbsecurity` | Silent `200` (or `422`) when the trap field is filled | `honeypotField`, `honeypotSilent` |
+| `Signed@cbsecurity` | `403` unless the signed URL is valid | none |
+
+```js
+// config/ColdBox.bx
+moduleSettings = { cbsecurity : { middleware : {
+    trustedProxies : [ "10.0.0.0/8" ],
+    throttle       : { limiters : { login : { maxAttempts : 5, decaySeconds : 60 } } }
+} } }
+
+// config/Router.bx: stack them, cheap checks first
+route( "/login" )
+    .middleware( [ "EnsureHttps@cbsecurity", "Throttle@cbsecurity" ] )
+    .meta( { throttle : "login" } )
+    .to( "sessions.create" )
+```
+
+- `Throttle` counts in a CacheBox cache (`cacheProvider`, default `"default"`). Use a shared cache with more
+  than one server. Use the `RateLimiter@cbsecurity` model (`hit`, `tooManyAttempts`, `remaining`,
+  `availableIn`, `clear`) outside routes.
+- A missing list or keys throws `cbsecurity.MiddlewareMisconfigured`. `X-Forwarded-For` is only trusted from
+  `middleware.trustedProxies`.
+
+### Signed URLs
+
+Set `signedUrls.secret` (env `CBSECURITY_SIGNING_SECRET`), protect the route with `Signed@cbsecurity`, and
+create links with the mixins available in handlers, views, layouts and interceptors:
+
+```js
+route( pattern = "/invoices/:id/download", name = "invoice.download" )
+    .middleware( "Signed@cbsecurity" ).to( "invoices.download" )
+
+var link = signedRoute( "invoice.download", { id: 42 }, 3600 )  // name, params, expiresIn seconds
+var link = signedUrl( "/files/9", { ref: "mail" }, 600 )
+if ( hasValidSignature() ) { ... }
+```
+
+In models inject `UrlSigner@cbsecurity` (`sign`, `isValid`, `check`). Every query param is signed, so adding
+one invalidates the link. Param names are case insensitive and scheme and host are ignored.
 
 ## Security Context (In Code)
 
