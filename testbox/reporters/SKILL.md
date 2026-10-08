@@ -1,6 +1,6 @@
 ---
 name: testbox-reporters
-description: "Use this skill when selecting or configuring TestBox reporters: Agent, ANTJunit, Console, Doc, JSON, JUnit, Min, MinText, Simple, Text, XML, Streaming; setting reporter options (hideSkipped, editor links for Simple reporter); how reporters show spec attachments (attach(), browser screenshots/traces/videos) and retry attempts; or creating a custom reporter by implementing the IReporter interface."
+description: "Use this skill when selecting or configuring TestBox reporters: Agent, ANTJunit, Console, Doc, Dot, JSON, JUnit, Min, MinText, Simple, Text, XML, Streaming; the TestBox 7.2 HTML reporters (Simple, Min, Dot, Doc) with light/dark themes, keyboard shortcuts, status filters and Ask AI (aiAssist, aiProviders, aiContextLines, aiStackFrames, aiPrompt, urlParams); editor links; setting reporter options (hideSkipped); how reporters show spec attachments (attach(), browser screenshots/traces/videos) and retry attempts; or creating a custom reporter by implementing the IReporter interface."
 applyTo: "**/tests/**/*.{bx,bxm,cfc,cfm,cfml}"
 ---
 
@@ -11,6 +11,7 @@ applyTo: "**/tests/**/*.{bx,bxm,cfc,cfm,cfml}"
 - Choosing the right reporter for a use case (CI, development, IDE, browser)
 - Configuring reporter-specific options (hideSkipped, IDE links)
 - Using the AgentReporter for token-efficient output for AI agents and automation
+- Using the HTML reporters (`simple`, `min`, `dot`, `doc`): filters, shortcuts, themes, run links, **Ask AI** and its options (TB7.2+)
 - Using the StreamingReporter for real-time SSE output
 - Building a custom reporter by implementing `IReporter`
 
@@ -23,12 +24,13 @@ applyTo: "**/tests/**/*.{bx,bxm,cfc,cfm,cfml}"
 | `agent` | `testbox.system.reports.AgentReporter` | AI agents, minimal token usage (TB7.2+) |
 | `antjunit` | `testbox.system.reports.ANTJunitReporter` | Ant/legacy CI pipelines |
 | `console` | `testbox.system.reports.ConsoleReporter` | CI stdout logs |
-| `doc` | `testbox.system.reports.DocReporter` | Living documentation |
+| `doc` | `testbox.system.reports.DocReporter` | Living documentation, bundle navigation (HTML) |
+| `dot` | `testbox.system.reports.DotReporter` | Whole run at a glance, one dot per spec (HTML) |
 | `json` | `testbox.system.reports.JSONReporter` | API / tooling consumption |
 | `junit` | `testbox.system.reports.JUnitReporter` | Modern CI (GitHub Actions, Jenkins) |
-| `min` | `testbox.system.reports.MinReporter` | Fast dot-notation output |
-| `mintext` | `testbox.system.reports.MinTextReporter` | Plain-text minimal (no ANSI) |
-| `simple` | `testbox.system.reports.SimpleReporter` | Rich HTML browser view |
+| `min` | `testbox.system.reports.MinReporter` | Compact HTML: only what needs attention |
+| `mintext` | `testbox.system.reports.MinTextReporter` | Compact plain-text summary |
+| `simple` | `testbox.system.reports.SimpleReporter` | Complete HTML view, failures first, Ask AI |
 | `text` | `testbox.system.reports.TextReporter` | Plain-text verbose output |
 | `xml` | `testbox.system.reports.XMLReporter` | XML consumers, legacy tools |
 | `streaming` | `testbox.system.reports.StreamingReporter` | SSE real-time output (TB7+) |
@@ -37,26 +39,21 @@ applyTo: "**/tests/**/*.{bx,bxm,cfc,cfm,cfml}"
 
 ## Reporter Details
 
-### `min` — Minimal (default for CLI)
+### `min`: Minimal HTML
 
-Prints a dot (`.`) for pass, `F` for fail, `E` for error, `S` for skip. Summary at the end.
+A compact HTML page that lists only what needs attention, one line per failure, under the verdict banner. It is one of the four rebuilt HTML reporters, see [HTML Reporters](#html-reporters-testbox-72-redesign).
 
 ```bash
 ./testbox/run --reporter=min
-testbox run reporter=min
 ```
 
-Output:
-```
-.....F.....S...E.......
-Tests: 15  Pass: 12  Fail: 1  Error: 1  Skipped: 1  Duration: 234ms
-```
+The BoxLang CLI runner writes it to `report.html`. The default CLI reporter is `console`.
 
 ---
 
-### `mintext` — Minimal Text (no ANSI colors)
+### `mintext`: Minimal Text
 
-Same as `min` but no ANSI escape codes — suitable for log files.
+A compact plain-text summary (one line of totals per bundle, no HTML). Suitable for log files.
 
 ```bash
 ./testbox/run --reporter=mintext
@@ -74,7 +71,7 @@ Prints each spec name with colored pass/fail indicator. Useful in CI logs where 
 new testbox.system.TestBox(
     directory: { mapping: "tests.specs", recurse: true },
     reporter:  {
-        class:   "testbox.system.reports.ConsoleReporter",
+        type:    "testbox.system.reports.ConsoleReporter",
         options: { hideSkipped: true }   // suppress skipped spec noise
     }
 ).run()
@@ -89,42 +86,42 @@ testbox run reporter=console options.hideSkipped=true
 
 ### `simple` — Simple HTML
 
-Rich HTML output with collapsible suites, color coding, and IDE deep-link support.
+The complete HTML report: a *Needs attention* section with every failure and error first, then every bundle with its suites and specs. It is the default of the web runners. Shared behavior of all HTML reporters is under [HTML Reporters](#html-reporters-testbox-72-redesign).
+
+```boxlang
+new testbox.system.TestBox(
+    bundles  : "tests.specs.MyTest",
+    reporter : "simple"
+).run()
+```
 
 #### Editor Links
 
-Configure Deep Links so clicking a spec name opens the file in your IDE:
+Failures and stack frames link to the file and line in your editor. The editor is a **request parameter**, not a reporter option: pass `editor` in the runner URL (`runner.cfm?reporter=simple&editor=idea`), or, when you build the report from code where there is no `url` scope, in the `urlParams` option. The default is `vscode`.
 
 ```boxlang
-reporter: {
-    class:   "testbox.system.reports.SimpleReporter",
-    options: {
-        // Supported editors:
-        editor: "vscode"       // vscode://file/{path}:{line}
-        editor: "vscode-insiders"
-        editor: "sublimetext"  // subl://open?url=file://{path}&line={line}
-        editor: "textmate"     // txmt://open?url=file://{path}&line={line}
-        editor: "emacs"        // emacs://open?url=file://{path}&line={line}
-        editor: "macvim"       // mvim://open?url=file://{path}&line={line}
-        editor: "atom"         // atom://open?src={path}&line={line}
-        editor: "idea"         // idea://open?file={path}&line={line}
+new testbox.system.TestBox(
+    bundles  : "tests.specs.MyTest",
+    reporter : {
+        type    : "testbox.system.reports.SimpleReporter",
+        options : { urlParams : { editor : "idea" } }
     }
-}
+).run()
 ```
 
-In `box.json`:
+| `editor` | Link |
+|---|---|
+| `vscode` | `vscode://file/{path}:{line}` |
+| `vscode-insiders` | `vscode-insiders://file/{path}:{line}` |
+| `sublime` | `subl://open?url=file://{path}&line={line}` |
+| `textmate` | `txmt://open?url=file://{path}&line={line}` |
+| `emacs` | `emacs://open?url=file://{path}&line={line}` |
+| `macvim` | `mvim://open/?url=file://{path}&line={line}` |
+| `idea` | `idea://open?file={path}&line={line}` |
+| `atom` | `atom://core/open/file?filename={path}&line={line}` |
+| `espresso` | `x-espresso://open?filepath={path}&lines={line}` |
 
-```json
-{
-  "testbox": {
-    "runner": "http://localhost:8080/tests/runner.cfm",
-    "reporter": {
-      "class": "testbox.system.reports.SimpleReporter",
-      "options": { "editor": "vscode" }
-    }
-  }
-}
-```
+Any other value produces a plain `{path}:{line}`.
 
 ---
 
@@ -222,7 +219,13 @@ Legacy Ant-compatible JUnit XML format. Use only when your build tool requires A
 
 ### `doc` — Documentation
 
-Produces a structured HTML report formatted as living documentation — spec names read like sentences describing application behaviour.
+Your suite rendered as living documentation: a bundle navigation on the side and every suite and spec as readable text, so spec names read like sentences describing application behavior. It has the same verdict banner, filters, themes and Ask AI as the other HTML reporters.
+
+---
+
+### `dot`: Dot
+
+One dot per spec, grouped by bundle. Hover a dot for its name, click it to open the details, the code and Ask AI in a drawer. Status filters **dim** the dots that do not match, so the shape of the run stays in place. Not deprecated: it was rebuilt in 7.2.
 
 ---
 
@@ -261,6 +264,66 @@ data: {"specName":"it can delete a user","status":"failed","message":"Expected t
 
 ---
 
+## HTML Reporters (TestBox 7.2 redesign)
+
+`simple`, `min`, `dot` and `doc` were rebuilt in 7.2 on Bootstrap 5.3, Bootstrap Icons, Alpine.js and Prism. **Everything is inlined**, so a report is one self-contained file that works airgapped. Use them with `reporter=simple|min|dot|doc` on the runner URL, or `reporter : "simple"` programmatically.
+
+### What every HTML reporter has
+
+- **Verdict first**: a green or red banner with totals, a proportion bar and status chips (Pass, Failed, Error, Skipped) that filter the whole report. A bundle that could not run (for example `beforeAll()` threw) gets its own alert above the verdict.
+- **Light, dark and system themes**, remembered in the browser and applied before paint.
+- **Keyboard**: `F` jumps to the next failure or error, `/` focuses the search box.
+- **Filters**: global status chips, a per-bundle status filter, live text search, Expand all and Collapse all. Bundles with problems start open.
+- **Highlighted BoxLang and CFML code** with the failing line marked.
+- **Run links** on every bundle, suite and spec. A run link is a plain link to the runner carrying only the requested target (`testBundles`, `testSuites` or `testSpecs`), so a refresh runs it again. Every other runner option falls back to its default.
+- **Responsive** layout.
+
+| Reporter | Layout | Ask AI |
+|---|---|---|
+| `simple` | *Needs attention* section, then every bundle | Menu on every failure and error card, plus Copy all failures |
+| `min` | One line per failure, bundle exceptions and debug output | Copy all failures for AI |
+| `dot` | One dot per spec, details in a drawer | Menu inside the drawer, plus Copy all failures |
+| `doc` | Bundle navigation and documentation-style text | Menu on every failure and error, plus Copy all failures |
+
+### Ask AI
+
+Every failure and error can be handed to an assistant. The prompt is built inside the page from the spec, status, message, the code around the failing line, the first stack frames and the command that re-runs only that spec. The menu offers **Copy prompt**, **Preview prompt**, **Open in ChatGPT / Claude** and **Copy for a coding agent** (the failure as JSON in the AgentReporter format). **Copy all failures for AI** builds one prompt for the whole run. Nothing leaves the page until a provider is clicked, and the first time the page shows a notice and waits for confirmation (remembered in the browser).
+
+Ask AI is **on by default**. Options go in the reporter `options` struct:
+
+| Option | Default | Purpose |
+|---|---|---|
+| `aiAssist` | `true` | Show Ask AI. `false` removes every Ask AI control and prompt. `?aiAssist=false` switches it off for one run |
+| `aiProviders` | ChatGPT and Claude | Array of `{ id, name, url }`. `url` must contain `{prompt}`. Setting it replaces the defaults |
+| `aiContextLines` | `5` | Lines of code before and after the failing line |
+| `aiStackFrames` | `8` | Stack frames in the prompt. Long prompts are trimmed to fit a URL |
+| `aiPrompt` | built in | Custom template with the tokens `{intro}` `{spec}` `{status}` `{message}` `{code}` `{stack}` `{rerun}` |
+| `urlParams` | none | Struct of request params (`editor`, `aiAssist`...) for reports produced from code, where there is no `url` scope |
+
+```boxlang
+new testbox.system.TestBox(
+    bundles  : "tests.specs",
+    reporter : {
+        type    : "testbox.system.reports.SimpleReporter",
+        options : {
+            aiContextLines : 8,
+            aiProviders    : [ { id : "acme", name : "Acme AI", url : "https://ai.acme.test/?p={prompt}" } ],
+            urlParams      : { editor : "idea" }
+        }
+    }
+).run()
+```
+
+### Gotchas
+
+- **Do not parse HTML reporter output.** When the consumer is a script or an LLM, use `agent` (or `json`). The HTML reporters are for people.
+- The reporter struct uses the key `type` (`{ type : "testbox.system.reports.SimpleReporter", options : {} }`), not `class`.
+- `editor` and `aiAssist` come from the request. In a headless run (BoxLang CLI) there is no `url` scope, pass them in `urlParams`.
+- **Removed in 7.2:** the `url.fullPage` switch. An HTML reporter always returns a complete page.
+- The inlined front-end libraries are vendored in `build/vendor` and rebuilt with `box run-script assets:update` (contributors only).
+
+---
+
 ## Spec Attachments and Attempts (TestBox 7.2+)
 
 Files attached to a spec, with `attach( path, type = "file", name = "" )` or automatically by browser specs (failure `screenshot`, `trace` and `video` files of `BrowserSpec` / `BrowserTestCase`), are stored in the `attachments` array of the spec stats (`{ path, type, name }`), for passed and failed specs. Each reporter surfaces them:
@@ -293,7 +356,7 @@ new testbox.system.TestBox(
 new testbox.system.TestBox(
     directory: { mapping: "tests.specs", recurse: true },
     reporter: {
-        class:   "testbox.system.reports.ConsoleReporter",
+        type:    "testbox.system.reports.ConsoleReporter",
         options: { hideSkipped: true }
     }
 ).run()
@@ -388,8 +451,10 @@ new testbox.system.TestBox(
 
 | Scenario | Reporter |
 |---|---|
-| Fast dev feedback in terminal | `min` or `mintext` |
-| Rich browser debugging | `simple` with `editor: "vscode"` |
+| Fast dev feedback in terminal | `console` or `mintext` |
+| Rich browser debugging | `simple` (add `&editor=idea` for editor links) |
+| Whole run at a glance in a browser | `dot` |
+| Compact browser view of what needs attention | `min` |
 | CI (GitHub Actions / Jenkins) | `junit` or `antjunit` |
 | Log file output | `text` or `mintext` |
 | Test dashboard / API | `json` |
