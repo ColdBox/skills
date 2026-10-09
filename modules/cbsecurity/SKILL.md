@@ -82,6 +82,13 @@ function configure() {
 }
 ```
 
+### CSRF Settings
+
+cbsecurity includes cbcsrf. Set its options under `csrf` in the cbsecurity settings, or configure the `cbcsrf` module directly.
+Keys you explicitly set in `cbsecurity.csrf` win over the `cbcsrf` module settings. Keys you leave out keep the `cbcsrf` value,
+so cbsecurity defaults never overwrite a `cbcsrf` override. Keys: `enableAutoVerifier`, `verifyExcludes`, `rotationTimeout`,
+`enableEndpoint`, `cacheStorage`, `enableAuthTokenRotator`.
+
 ## Annotation-Based Security
 
 ```js

@@ -35,22 +35,30 @@ box install cbcsrf
 // config/ColdBox.cfc
 moduleSettings = {
     cbcsrf = {
-        enabled          = true,
-        tokenKey         = "_token",                    // form field / header key
-        rotateTokens     = false,                       // rotate on every request
-        tokenExpiration  = 0,                           // 0 = session lifetime (minutes)
-        verifyReferer    = true,
-        storageStrategy  = "session",                   // session | cookie
-        protectedMethods = [ "POST", "PUT", "PATCH", "DELETE" ],
-        exemptions       = [],                          // regex patterns to skip
-
-        // Custom handler on invalid token (optional)
-        onInvalidToken   = function( event, rc, prc ) {
-            throw( type = "InvalidCSRFToken", message = "Invalid or missing CSRF token" )
-        }
+        // Load an interceptor that verifies all non-GET requests
+        enableAutoVerifier     = false,
+        // Events to skip verification for, regex allowed: e.g. "stripe\\..*"
+        verifyExcludes         = [],
+        // Token timeout in minutes, 0 = tokens never expire
+        rotationTimeout        = 30,
+        // Enable the /cbcsrf/generate endpoint for secured users
+        enableEndpoint         = false,
+        // WireBox mapping of the token storage
+        cacheStorage           = "CacheStorage@cbstorages",
+        // Rotate tokens on cbAuth login/logout (cbcsrf default false, cbsecurity default true)
+        enableAuthTokenRotator = true
     }
 }
 ```
+
+### With cbsecurity
+
+cbsecurity includes cbcsrf and accepts the same keys under its `csrf` setting. Precedence, highest first:
+
+1. Keys you explicitly set in `cbsecurity.csrf`
+2. The `cbcsrf` module settings (your own overrides or its defaults)
+
+Only the keys you set in `cbsecurity.csrf` are applied. cbsecurity defaults never overwrite a `cbcsrf` override.
 
 ## Core Helpers
 
@@ -129,7 +137,7 @@ route( "/webhooks/stripe" )
 Or via config regex pattern:
 
 ```js
-exemptions = [ "^api/webhooks/", "^public/payments/" ]
+verifyExcludes = [ "^api/webhooks/", "^public/payments/" ]
 ```
 
 ### Token Management API
@@ -150,7 +158,7 @@ csrfService.rotateToken()                      // force rotation
 - **Exempt webhooks by route** — not by disabling CSRF entirely
 - **Use `X-CSRF-TOKEN` header for AJAX** rather than body param in JSON APIs
 - **Never log CSRF tokens** — treat them like short-lived secrets
-- **Set `rotateTokens = true`** for higher-security applications to limit token reuse
+- **Lower `rotationTimeout`** for higher-security applications to limit token reuse
 - **Do not exempt login forms** — they should also include CSRF tokens
 
 ## Documentation

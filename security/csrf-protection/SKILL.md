@@ -34,26 +34,31 @@ box install cbcsrf
 ```boxlang
 // config/ColdBox.cfc
 moduleSettings = {
-    cbcsrf: {
-        enabled: true,
-        tokenKey: "_csrftoken",
-
-        // Rotate token for each request (more secure, may cause issues with multi-tab)
-        rotateTokens: false,
-
-        // Which HTTP methods require verification
-        verifyMethod: "all",  // or "post", "delete", "put", "patch"
-
-        // Token expiration in minutes
-        tokenExpiration: 30,
-
-        // Exclude these event/route patterns from CSRF
-        exclude: [
-            "^api\\..*"   // exclude all API routes
-        ]
+    cbcsrf = {
+        // Load an interceptor that verifies all non-GET requests
+        enableAutoVerifier     = false,
+        // Events to skip verification for, regex allowed: e.g. "stripe\\..*"
+        verifyExcludes         = [],
+        // Token timeout in minutes, 0 = tokens never expire
+        rotationTimeout        = 30,
+        // Enable the /cbcsrf/generate endpoint for secured users
+        enableEndpoint         = false,
+        // WireBox mapping of the token storage
+        cacheStorage           = "CacheStorage@cbstorages",
+        // Rotate tokens on cbAuth login/logout (cbcsrf default false, cbsecurity default true)
+        enableAuthTokenRotator = true
     }
 }
 ```
+
+### With cbsecurity
+
+cbsecurity includes cbcsrf and accepts the same keys under its `csrf` setting. Precedence, highest first:
+
+1. Keys you explicitly set in `cbsecurity.csrf`
+2. The `cbcsrf` module settings (your own overrides or its defaults)
+
+Only the keys you set in `cbsecurity.csrf` are applied. cbsecurity defaults never overwrite a `cbcsrf` override.
 
 ## Adding CSRF Token to HTML Forms
 
@@ -180,7 +185,7 @@ fetch('/users', {
 moduleSettings = {
     cbcsrf: {
         // Exclude all API routes — APIs use JWT/API key auth instead
-        exclude: [
+        verifyExcludes: [
             "^api\\..*",
             "^webhook\\..*"
         ]
@@ -263,5 +268,5 @@ component extends="coldbox.system.Interceptor" {
 - CSRF protection complements (doesn't replace) authentication
 - API routes relying on JWT/API keys don't need CSRF tokens — exclude them
 - Tokens are tied to the user's session
-- `rotateTokens: true` is more secure but may break browser back-button behavior
+- A short `rotationTimeout` is more secure but may break multi-tab and back-button behavior
 - Always use HTTPS so tokens can't be intercepted
