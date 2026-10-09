@@ -35,123 +35,128 @@ box install cbcsrf
 // config/ColdBox.cfc
 moduleSettings = {
     cbcsrf = {
-        enabled          = true,
-        tokenKey         = "_token",                    // form field / header key
-        rotateTokens     = false,                       // rotate on every request
-        tokenExpiration  = 0,                           // 0 = session lifetime (minutes)
-        verifyReferer    = true,
-        storageStrategy  = "session",                   // session | cookie
-        protectedMethods = [ "POST", "PUT", "PATCH", "DELETE" ],
-        exemptions       = [],                          // regex patterns to skip
-
-        // Custom handler on invalid token (optional)
-        onInvalidToken   = function( event, rc, prc ) {
-            throw( type = "InvalidCSRFToken", message = "Invalid or missing CSRF token" )
-        }
+        // Load an interceptor that verifies all non-GET requests
+        enableAutoVerifier     = false,
+        // Events to skip verification for, regex allowed: e.g. "stripe\\..*"
+        verifyExcludes         = [],
+        // Token timeout in minutes, 0 = tokens never expire
+        rotationTimeout        = 30,
+        // Enable the /cbcsrf/generate endpoint for secured users
+        enableEndpoint         = false,
+        // WireBox mapping of the token storage
+        cacheStorage           = "CacheStorage@cbstorages",
+        // Rotate tokens on cbAuth login/logout (cbcsrf default false, cbsecurity default true)
+        enableAuthTokenRotator = true
     }
 }
 ```
 
+### With cbsecurity
+
+cbsecurity includes cbcsrf and accepts the same keys under its `csrf` setting. Precedence, highest first:
+
+1. Keys you explicitly set in `cbsecurity.csrf`
+2. The `cbcsrf` module settings (your own overrides or its defaults)
+
+Only the keys you set in `cbsecurity.csrf` are applied. cbsecurity defaults never overwrite a `cbcsrf` override.
+
 ## Core Helpers
 
-Available as mixins in handlers, views, and layouts:
+Mixins available in handlers, views, and layouts:
 
 | Helper | Returns | Purpose |
 |--------|---------|---------|
-| `csrfToken()` | string | Current CSRF token |
-| `csrf()` | HTML string | `<input type="hidden" name="_token" value="...">` |
+| `csrfToken( key, forceNew )` | string | Generate (or reuse) a token for the key |
+| `csrfVerify( token, key )` | boolean | Validate a token for the key |
+| `csrf( key, forceNew )` | HTML string | Hidden `<input name="csrf" id="csrf">` with a token |
+| `csrfField( key, forceNew )` | HTML string | Same hidden field, plus JS that reloads the page when the token expires (uses `rotationTimeout`) |
+| `csrfRotate()` | this | Clear all stored tokens |
+
+The same operations exist on the service, WireBox ID `@cbcsrf`: `generate( key, forceNew )`, `verify( token, key )`, `rotate()`.
+
+## How Verification Works
+
+Verification is not automatic. Set `enableAutoVerifier = true` to load the `VerifyCsrf@cbcsrf` interceptor, or verify manually.
+The interceptor:
+
+- Skips `GET`, `HEAD` and `OPTIONS`
+- Skips events matching a `verifyExcludes` regex
+- Skips actions annotated with `skipCsrf`
+- Reads the token from the `csrf` request value or the `x-csrf-token` header
+- Throws `TokenNotFoundException` when no token is sent and `TokenMismatchException` when it is invalid
 
 ## Production Patterns
 
 ### HTML Form Protection
 
 ```cfml
-<!--- Preferred: use the csrf() helper to inject the hidden field --->
-<form method="POST" action="#event.buildLink('user.update')#">
+<form method="POST" action="#event.buildLink( 'user.update' )#">
     #csrf()#
     <input type="text" name="username">
     <button type="submit">Update</button>
 </form>
-
-<!--- Or manually --->
-<input type="hidden" name="_token" value="#csrfToken()#">
 ```
 
 ### AJAX / Fetch Requests
 
 ```html
-<!--- Embed token in <head> for JavaScript access --->
 <meta name="csrf-token" content="#csrfToken()#">
 ```
 
 ```js
-// Vanilla fetch
 fetch( '/api/user/update', {
     method  : 'POST',
     headers : {
-        'X-CSRF-TOKEN' : document.querySelector( 'meta[name="csrf-token"]' ).content,
+        'x-csrf-token' : document.querySelector( 'meta[name="csrf-token"]' ).content,
         'Content-Type' : 'application/json'
     },
     body : JSON.stringify( data )
 } )
-
-// Axios — set globally once
-axios.defaults.headers.common['X-CSRF-TOKEN'] =
-    document.querySelector( 'meta[name="csrf-token"]' ).content
 ```
 
 ### Manual Validation in a Handler
 
-```js
-class MyHandler extends coldbox.system.EventHandler {
-    @inject("CSRFService@cbcsrf")
-    property name="csrfService";
+```cfml
+component {
 
-    function save( event, rc, prc ) {
-        if ( !csrfService.verify( rc._token ?: "" ) ) {
-            throw( type = "InvalidCSRFToken", message = "CSRF token validation failed" )
+    function save( event, rc, prc ){
+        if ( !csrfVerify( rc.csrf ?: "" ) ) {
+            throw( type = "TokenMismatchException", message = "CSRF token validation failed" )
         }
         // process ...
     }
+
 }
 ```
 
-### Route Exemptions
+### Skipping Verification
 
-```js
-// config/Router.cfc — exempt webhooks from CSRF
-route( "/webhooks/stripe" )
-    .withHandler( "webhooks.stripe" )
-    .withAction( { POST : "process" } )
-    .exemptFromCSRF()
+```cfml
+// Skip one action when the auto verifier is on
+function webhook( event, rc, prc ) skipCsrf {
+    // ...
+}
 ```
 
-Or via config regex pattern:
+Or by event regex in the settings:
 
 ```js
-exemptions = [ "^api/webhooks/", "^public/payments/" ]
+verifyExcludes = [ "^api\\..*", "^webhooks\\..*" ]
 ```
 
-### Token Management API
+### Token Endpoint for SPAs
 
-```js
-property name="csrfService" inject="CSRFService@cbcsrf";
-
-var token    = csrfService.getToken()          // current token
-var newToken = csrfService.generateToken()     // generate new token
-var isValid  = csrfService.verify( token )     // validate
-csrfService.rotateToken()                      // force rotation
-```
+Set `enableEndpoint = true` and request `GET /cbcsrf/generate/:key?`. The endpoint returns a token for the key (default `default`).
+It is a `secured` handler, so authenticated users only when cbsecurity or cbguard is installed, and it returns `404` when disabled.
 
 ## Best Practices
 
-- **Include `csrf()` in every state-changing form** — POST, PUT, PATCH, DELETE
-- **Exempt read-only APIs** (`GET`, `HEAD`, `OPTIONS`) — they're protected by design
-- **Exempt webhooks by route** — not by disabling CSRF entirely
-- **Use `X-CSRF-TOKEN` header for AJAX** rather than body param in JSON APIs
-- **Never log CSRF tokens** — treat them like short-lived secrets
-- **Set `rotateTokens = true`** for higher-security applications to limit token reuse
-- **Do not exempt login forms** — they should also include CSRF tokens
+- **Include `csrf()` in every state-changing form**: POST, PUT, PATCH, DELETE
+- **Use the `x-csrf-token` header for AJAX** rather than a body param in JSON APIs
+- **Exclude webhooks and token-authenticated APIs** with `verifyExcludes` or `skipCsrf`, not by disabling CSRF entirely
+- **Never log CSRF tokens**: treat them like short-lived secrets
+- **Lower `rotationTimeout`** for higher-security applications to limit token reuse
+- **Do not exempt login forms**: they should also include CSRF tokens
 
 ## Documentation
 
