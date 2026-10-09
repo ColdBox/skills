@@ -63,66 +63,37 @@ Only the keys you set in `cbsecurity.csrf` are applied. cbsecurity defaults neve
 ## Adding CSRF Token to HTML Forms
 
 ```html
-<!-- views/users/create.cfm -->
 <form action="#event.buildLink( 'users.store' )#" method="post">
-
-    <!-- Drop the CSRF token field — auto-generates the hidden input -->
+    <!-- Hidden input named "csrf" with a token -->
     #csrf()#
 
     <div>
         <label>Name: <input type="text" name="name" required /></label>
-    </div>
-    <div>
-        <label>Email: <input type="email" name="email" required /></label>
     </div>
 
     <button type="submit">Create User</button>
 </form>
 ```
 
-## Manual Token Generation
+## Verifying Tokens
+
+Set `enableAutoVerifier: true` and the `VerifyCsrf@cbcsrf` interceptor checks every request that is not `GET`, `HEAD` or `OPTIONS`.
+The token comes from the `csrf` request value or the `x-csrf-token` header. A missing token throws `TokenNotFoundException`
+and an invalid one throws `TokenMismatchException`.
+
+To verify by hand in a handler:
 
 ```boxlang
-// In handler — pass token to view
-function create( event, rc, prc ) {
-    prc.csrfToken = generateCSRFToken()
-    event.setView( "users/create" )
-}
-```
-
-```html
-<!-- View with manual token -->
-<form method="post">
-    <input type="hidden" name="_csrftoken" value="#prc.csrfToken#" />
-    <!-- ...fields... -->
-</form>
-```
-
-## Validating CSRF in Handlers
-
-```boxlang
-/**
- * handlers/Users.cfc
- */
-class extends="coldbox.system.EventHandler" {
+class {
 
     // POST /users
     function store( event, rc, prc ) {
-        // cbcsrf automatically validates on POST actions
-        // If token is invalid it throws an exception
-
-        // Manual validation if needed:
-        if ( !verifyCSRFToken( rc._csrftoken ) ) {
+        if ( !csrfVerify( rc.csrf ?: "" ) ) {
             flash.put( "error", "Invalid security token. Please try again." )
             relocate( "users.create" )
         }
 
-        userService.create( {
-            name:  rc.name,
-            email: rc.email
-        } )
-
-        flash.put( "success", "User created!" )
+        userService.create( { name: rc.name, email: rc.email } )
         relocate( "users.index" )
     }
 }
@@ -131,60 +102,47 @@ class extends="coldbox.system.EventHandler" {
 **CFML (`.cfc`):**
 
 ```cfml
-/**
- * handlers/Users.cfc
- */
-component extends="coldbox.system.EventHandler" {
+component {
 
-    // POST /users
-    function store( event, rc, prc ) {
-        // cbcsrf automatically validates on POST actions
-        // If token is invalid it throws an exception
-
-        // Manual validation if needed:
-        if ( !verifyCSRFToken( rc._csrftoken ) ) {
+    function store( event, rc, prc ){
+        if ( !csrfVerify( rc.csrf ?: "" ) ) {
             flash.put( "error", "Invalid security token. Please try again." )
             relocate( "users.create" )
         }
 
-        userService.create( {
-            name:  rc.name,
-            email: rc.email
-        } )
-
-        flash.put( "success", "User created!" )
+        userService.create( { name : rc.name, email : rc.email } )
         relocate( "users.index" )
     }
+
 }
 ```
 
 ## CSRF with AJAX Requests
 
-```javascript
-// Include CSRF token in AJAX requests via header
-fetch('/users', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
-    },
-    body: JSON.stringify({ name: 'John', email: 'john@example.com' })
-})
-```
-
 ```html
-<!-- Add CSRF token as meta tag in layout -->
 <head>
-    <meta name="csrf-token" content="#generateCSRFToken()#" />
+    <meta name="csrf-token" content="#csrfToken()#" />
 </head>
 ```
 
-## Excluding API Routes
+```javascript
+fetch( '/users', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+        'x-csrf-token': document.querySelector( 'meta[name="csrf-token"]' ).content
+    },
+    body: JSON.stringify( { name: 'John', email: 'john@example.com' } )
+} )
+```
+
+## Excluding API Routes and Actions
 
 ```boxlang
 moduleSettings = {
     cbcsrf: {
-        // Exclude all API routes — APIs use JWT/API key auth instead
+        enableAutoVerifier: true,
+        // Event regex patterns. APIs use JWT/API key auth instead
         verifyExcludes: [
             "^api\\..*",
             "^webhook\\..*"
@@ -193,65 +151,11 @@ moduleSettings = {
 }
 ```
 
-## Interceptor-Based Validation
+Or annotate a single action with `skipCsrf`:
 
 ```boxlang
-/**
- * interceptors/CSRFInterceptor.cfc
- * Global CSRF validation for all POST requests
- */
-class extends="coldbox.system.Interceptor" {
-
-    function preProcess( event, interceptData ) {
-        // Only check state-changing methods
-        if ( !listContains( "POST,PUT,PATCH,DELETE", event.getHTTPMethod() ) ) {
-            return
-        }
-
-        // Skip API routes (use JWT instead)
-        if ( event.getCurrentEvent() startsWith "api." ) {
-            return
-        }
-
-        // Validate token
-        var token = event.getValue( "_csrftoken", "" )
-
-        if ( !verifyCSRFToken( token ) ) {
-            flash.put( "error", "Your session may have expired. Please try again." )
-            relocate( event.getCurrentRoutedURL() )
-        }
-    }
-}
-```
-
-**CFML (`.cfc`):**
-
-```cfml
-/**
- * interceptors/CSRFInterceptor.cfc
- * Global CSRF validation for all POST requests
- */
-component extends="coldbox.system.Interceptor" {
-
-    function preProcess( event, interceptData ) {
-        // Only check state-changing methods
-        if ( !listContains( "POST,PUT,PATCH,DELETE", event.getHTTPMethod() ) ) {
-            return
-        }
-
-        // Skip API routes (use JWT instead)
-        if ( event.getCurrentEvent() startsWith "api." ) {
-            return
-        }
-
-        // Validate token
-        var token = event.getValue( "_csrftoken", "" )
-
-        if ( !verifyCSRFToken( token ) ) {
-            flash.put( "error", "Your session may have expired. Please try again." )
-            relocate( event.getCurrentRoutedURL() )
-        }
-    }
+function webhook( event, rc, prc ) skipCsrf {
+    // ...
 }
 ```
 
@@ -259,14 +163,16 @@ component extends="coldbox.system.Interceptor" {
 
 | Function | Description |
 |----------|-------------|
-| `csrf()` | Generate `<input type="hidden">` field with token |
-| `generateCSRFToken()` | Return raw token string |
-| `verifyCSRFToken( token )` | Validate a token string, returns boolean |
+| `csrf( key, forceNew )` | Hidden `<input name="csrf">` field with a token |
+| `csrfField( key, forceNew )` | Same field plus JS that reloads the page when the token expires |
+| `csrfToken( key, forceNew )` | Raw token string |
+| `csrfVerify( token, key )` | Validate a token, returns boolean |
+| `csrfRotate()` | Clear all stored tokens |
 
 ## Security Notes
 
 - CSRF protection complements (doesn't replace) authentication
-- API routes relying on JWT/API keys don't need CSRF tokens — exclude them
-- Tokens are tied to the user's session
+- API routes relying on JWT/API keys don't need CSRF tokens, so exclude them
+- Tokens are stored in the configured `cacheStorage` (default `CacheStorage@cbstorages`)
 - A short `rotationTimeout` is more secure but may break multi-tab and back-button behavior
 - Always use HTTPS so tokens can't be intercepted
